@@ -1,0 +1,2030 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>proTakip — Clinical Console</title>
+    <meta
+      name="description"
+      content="proTakip — open-heart surgery anticoagulation decision support. Heparin and protamine real-time dosing console."
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900&family=Inter+Tight:wght@300..700&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --bg: 0 0% 98%;
+        --fg: 220 10% 10%;
+        --muted: 220 10% 96%;
+        --muted-fg: 220 10% 40%;
+        --border: 220 10% 90%;
+        --card: 0 0% 100%;
+        --primary: 355 70% 35%;
+        --primary-fg: 0 0% 100%;
+        --header-bg: 220 10% 10%;
+        --header-fg: 0 0% 100%;
+        --ok: 158 60% 38%;
+        --warn: 38 92% 45%;
+        --danger: 355 70% 35%;
+      }
+
+      .dark {
+        --bg: 220 18% 8%;
+        --fg: 0 0% 96%;
+        --muted: 220 14% 14%;
+        --muted-fg: 220 8% 60%;
+        --border: 220 14% 20%;
+        --card: 220 16% 12%;
+        --primary: 355 75% 55%;
+        --primary-fg: 0 0% 100%;
+        --header-bg: 220 22% 5%;
+        --header-fg: 0 0% 96%;
+        --ok: 158 60% 50%;
+        --warn: 42 92% 58%;
+        --danger: 355 75% 55%;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        font-size: 15px;
+      }
+      body {
+        margin: 0;
+        background-color: hsl(var(--bg));
+        color: hsl(var(--fg));
+        font-family: "Inter Tight", system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+        transition:
+          background-color 0.3s,
+          color 0.3s;
+      }
+      h1,
+      h2,
+      h3,
+      h4 {
+        font-family: "Fraunces", serif;
+        letter-spacing: -0.02em;
+        margin: 0;
+      }
+      .mono {
+        font-family: "Space Mono", monospace;
+      }
+      .serif {
+        font-family: "Fraunces", serif;
+      }
+      ::selection {
+        background-color: hsl(var(--primary));
+        color: hsl(var(--primary-fg));
+      }
+
+      header.app {
+        background-color: hsl(var(--header-bg));
+        color: hsl(var(--header-fg));
+        position: sticky;
+        top: 0;
+        z-index: 30;
+      }
+      .header-inner {
+        max-width: 1480px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+        height: 3.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+      .brand {
+        font-family: "Fraunces", serif;
+        font-style: italic;
+        font-size: 1.05rem;
+      }
+      .badge-context {
+        font-family: "Space Mono", monospace;
+        font-size: 0.7rem;
+        color: hsl(var(--muted-fg));
+      }
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+      }
+      .status-dot {
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 999px;
+        animation: pulse 1.6s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.6;
+          transform: scale(0.9);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.1);
+        }
+      }
+      .pill-ok .status-dot {
+        background: hsl(var(--ok));
+      }
+      .pill-warn .status-dot {
+        background: hsl(var(--warn));
+      }
+      .pill-danger .status-dot {
+        background: hsl(var(--danger));
+      }
+      .pill-ok {
+        color: hsl(var(--ok));
+      }
+      .pill-warn {
+        color: hsl(var(--warn));
+      }
+      .pill-danger {
+        color: hsl(var(--danger));
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .icon-btn,
+      .lang-btn {
+        background: transparent;
+        color: hsl(var(--header-fg) / 0.65);
+        border: 1px solid hsl(var(--header-fg) / 0.15);
+        font: inherit;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        padding: 0.35rem 0.6rem;
+        cursor: pointer;
+        transition:
+          color 0.2s,
+          border-color 0.2s,
+          background-color 0.2s;
+      }
+      .icon-btn:hover,
+      .lang-btn:hover {
+        color: hsl(var(--header-fg));
+        border-color: hsl(var(--header-fg) / 0.4);
+      }
+      .lang-btn.active,
+      .icon-btn.active {
+        color: hsl(var(--header-fg));
+        border-color: hsl(var(--primary));
+        background: hsl(var(--primary) / 0.15);
+      }
+
+      .layout {
+        max-width: 1480px;
+        margin: 0 auto;
+        padding: 1.5rem;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+      }
+      @media (min-width: 1024px) {
+        .layout {
+          grid-template-columns: 320px 1fr 320px;
+        }
+      }
+
+      .card {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        padding: 1.25rem;
+      }
+      .card h2,
+      .card h3 {
+        font-size: 1rem;
+        margin-bottom: 0.85rem;
+      }
+      .label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: hsl(var(--muted-fg));
+        display: block;
+      }
+      .label .unit {
+        opacity: 0.55;
+      }
+      input[type="number"],
+      select {
+        width: 100%;
+        background: hsl(var(--bg));
+        color: hsl(var(--fg));
+        border: 1px solid hsl(var(--border));
+        padding: 0.5rem 0.65rem;
+        font-family: "Space Mono", monospace;
+        font-size: 0.95rem;
+        margin-top: 0.25rem;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      input[type="number"]:focus,
+      select:focus {
+        border-color: hsl(var(--primary));
+      }
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+      }
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+      }
+      @media (max-width: 640px) {
+        .grid-3 {
+          grid-template-columns: 1fr;
+        }
+      }
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .computed-row {
+        display: flex;
+        justify-content: space-between;
+        font-family: "Space Mono", monospace;
+        font-size: 0.85rem;
+        padding: 0.25rem 0;
+      }
+      .computed-row span:first-child {
+        color: hsl(var(--muted-fg));
+      }
+      .computed-row.highlight span:last-child {
+        color: hsl(var(--primary));
+        font-weight: 700;
+      }
+
+      .btn {
+        font: inherit;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        padding: 0.7rem 1rem;
+        cursor: pointer;
+        border: 1px solid hsl(var(--border));
+        background: hsl(var(--card));
+        color: hsl(var(--fg));
+        transition:
+          background-color 0.2s,
+          border-color 0.2s;
+        width: 100%;
+      }
+      .btn:hover {
+        background: hsl(var(--muted));
+      }
+      .btn-primary {
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-fg));
+        border-color: hsl(var(--primary));
+      }
+      .btn-primary:hover {
+        opacity: 0.92;
+        background: hsl(var(--primary));
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.85rem;
+      }
+      @media (max-width: 768px) {
+        .metrics {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      .metric {
+        background: hsl(var(--card));
+        border: 1px solid hsl(var(--border));
+        padding: 1.1rem;
+      }
+      .metric .v {
+        font-family: "Space Mono", monospace;
+        font-size: 2.1rem;
+        font-weight: 300;
+      }
+      .metric .u {
+        font-family: "Space Mono", monospace;
+        font-size: 0.8rem;
+        color: hsl(var(--muted-fg));
+        margin-left: 0.25rem;
+      }
+      .metric .h {
+        margin-top: 0.6rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+      .metric.s-ok .h {
+        color: hsl(var(--ok));
+      }
+      .metric.s-warn .h {
+        color: hsl(var(--warn));
+      }
+      .metric.s-danger {
+        border-color: hsl(var(--danger));
+      }
+      .metric.s-danger .h {
+        color: hsl(var(--danger));
+      }
+
+      .chart-wrap {
+        height: 230px;
+        margin-top: 0.5rem;
+      }
+      .chart-wrap svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .chart-axis {
+        font-family: "Space Mono", monospace;
+        font-size: 9px;
+        fill: hsl(var(--muted-fg));
+      }
+      .chart-grid {
+        stroke: hsl(var(--border));
+        stroke-dasharray: 3 3;
+        stroke-width: 1;
+      }
+      .chart-line-act {
+        stroke: hsl(var(--primary));
+        stroke-width: 2;
+        fill: none;
+      }
+      .chart-line-hep {
+        stroke: hsl(var(--muted-fg));
+        stroke-width: 1.4;
+        stroke-dasharray: 3 3;
+        fill: none;
+      }
+      .chart-target {
+        stroke: hsl(var(--primary));
+        stroke-dasharray: 4 4;
+        stroke-width: 1;
+        opacity: 0.7;
+      }
+      .chart-dot {
+        fill: hsl(var(--primary));
+      }
+
+      table.log {
+        width: 100%;
+        font-family: "Space Mono", monospace;
+        font-size: 0.78rem;
+        border-collapse: collapse;
+        margin-top: 0.75rem;
+      }
+      table.log th {
+        text-align: left;
+        font-weight: 400;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        font-size: 0.65rem;
+        color: hsl(var(--muted-fg));
+        padding: 0.4rem 0.4rem 0.4rem 0;
+      }
+      table.log td {
+        padding: 0.4rem 0.4rem 0.4rem 0;
+        border-top: 1px solid hsl(var(--border));
+      }
+      table.log .del {
+        background: none;
+        border: none;
+        color: hsl(var(--muted-fg));
+        cursor: pointer;
+        font-size: 0.85rem;
+      }
+      table.log .del:hover {
+        color: hsl(var(--danger));
+      }
+
+      .reco-row {
+        border-left: 2px solid hsl(var(--primary));
+        padding: 0.25rem 0 0.25rem 1rem;
+      }
+      .reco-row .lbl {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: hsl(var(--muted-fg));
+      }
+      .reco-row .val {
+        font-family: "Space Mono", monospace;
+        font-size: 1.5rem;
+        font-weight: 300;
+      }
+      .reco-row .sub {
+        font-family: "Space Mono", monospace;
+        font-size: 0.7rem;
+        color: hsl(var(--muted-fg));
+        margin-top: 0.2rem;
+      }
+      .reco-row.warn {
+        border-color: hsl(var(--warn));
+      }
+      .reco-row.ok {
+        border-color: hsl(var(--ok));
+      }
+      .reco-row.neutral {
+        border-color: hsl(var(--muted-fg));
+      }
+
+      .alert {
+        display: flex;
+        gap: 0.6rem;
+        padding: 0.75rem;
+        border: 1px solid hsl(var(--border));
+        margin-bottom: 0.5rem;
+      }
+      .alert .ic {
+        font-weight: 700;
+        font-family: "Space Mono", monospace;
+        flex-shrink: 0;
+      }
+      .alert .lbl {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        font-weight: 700;
+      }
+      .alert .det {
+        font-size: 0.78rem;
+        color: hsl(var(--fg) / 0.85);
+        margin-top: 0.2rem;
+        line-height: 1.5;
+      }
+      .alert.s-ok {
+        background: hsl(var(--ok) / 0.08);
+        border-color: hsl(var(--ok) / 0.4);
+      }
+      .alert.s-ok .ic,
+      .alert.s-ok .lbl {
+        color: hsl(var(--ok));
+      }
+      .alert.s-warn {
+        background: hsl(var(--warn) / 0.08);
+        border-color: hsl(var(--warn) / 0.4);
+      }
+      .alert.s-warn .ic,
+      .alert.s-warn .lbl {
+        color: hsl(var(--warn));
+      }
+      .alert.s-danger {
+        background: hsl(var(--danger) / 0.08);
+        border-color: hsl(var(--danger));
+      }
+      .alert.s-danger .ic,
+      .alert.s-danger .lbl {
+        color: hsl(var(--danger));
+      }
+
+      .disclaimer {
+        font-family: "Space Mono", monospace;
+        font-size: 0.65rem;
+        color: hsl(var(--muted-fg));
+        line-height: 1.55;
+        margin-top: 0.75rem;
+      }
+
+      .formula {
+        display: block;
+        font-family: "Space Mono", monospace;
+        font-size: 0.62rem;
+        color: hsl(var(--muted-fg));
+        margin-top: 0.3rem;
+        line-height: 1.45;
+      }
+      .formula .eq {
+        color: hsl(var(--fg) / 0.75);
+      }
+      .cite {
+        display: inline-block;
+        font-family: "Space Mono", monospace;
+        font-size: 0.55rem;
+        color: hsl(var(--primary));
+        vertical-align: super;
+        text-decoration: none;
+        margin-left: 0.15rem;
+      }
+      .cite:hover {
+        text-decoration: underline;
+      }
+      .ranges-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.72rem;
+        font-family: "Space Mono", monospace;
+        margin-top: 0.5rem;
+      }
+      .ranges-table th,
+      .ranges-table td {
+        text-align: left;
+        padding: 0.4rem 0.3rem;
+        border-top: 1px solid hsl(var(--border));
+        vertical-align: top;
+      }
+      .ranges-table th {
+        font-size: 0.6rem;
+        font-weight: 400;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: hsl(var(--muted-fg));
+        border-top: none;
+      }
+      .ranges-table td.range {
+        color: hsl(var(--primary));
+      }
+      .refs-list {
+        font-family: "Space Mono", monospace;
+        font-size: 0.65rem;
+        color: hsl(var(--muted-fg));
+        line-height: 1.55;
+        margin: 0.5rem 0 0;
+        padding-left: 1.1rem;
+      }
+      .refs-list li {
+        margin-bottom: 0.4rem;
+      }
+      .refs-list li::marker {
+        color: hsl(var(--primary));
+      }
+
+      details > summary {
+        list-style: none;
+        cursor: pointer;
+      }
+      details > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .status-dot {
+          animation: none;
+        }
+        body {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header class="app">
+      <div class="header-inner">
+        <div style="display: flex; align-items: center; gap: 1rem">
+          <span class="brand">proTakip</span>
+          <span
+            class="badge-context"
+            style="
+              text-transform: uppercase;
+              letter-spacing: 0.15em;
+              font-size: 0.65rem;
+            "
+            data-i18n="subtitle"
+            >Clinical Console</span
+          >
+          <span id="contextInfo" class="badge-context"></span>
+        </div>
+        <div class="toolbar">
+          <span id="statusPill" class="status-pill pill-ok">
+            <span class="status-dot"></span>
+            <span id="statusLabel" data-i18n="statusStable">STABLE</span>
+          </span>
+          <span style="opacity: 0.2; padding: 0 0.3rem">|</span>
+          <button class="lang-btn active" data-lang="tr">TR</button>
+          <button class="lang-btn" data-lang="en">EN</button>
+          <button class="lang-btn" data-lang="es">ES</button>
+          <span style="opacity: 0.2; padding: 0 0.3rem">|</span>
+          <button class="icon-btn active" data-theme="light" data-i18n="themeLight">Açık</button>
+          <button class="icon-btn" data-theme="dark" data-i18n="themeDark">Koyu</button>
+          <button class="icon-btn" data-theme="random" data-i18n="themeRandom">Rastgele</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <!-- LEFT -->
+      <aside class="stack">
+        <section class="card">
+          <h2 class="serif" data-i18n="patient">Hasta</h2>
+          <div class="grid-2">
+            <label>
+              <span class="label"
+                ><span data-i18n="age">Yaş</span>
+                <span class="unit" data-i18n="unitYrs">yıl</span></span
+              >
+              <input id="f-age" type="number" min="0" max="120" />
+            </label>
+            <label>
+              <span class="label" data-i18n="sex">Cinsiyet</span>
+              <select id="f-sex">
+                <option value="male" data-i18n="male">Erkek</option>
+                <option value="female" data-i18n="female">Kadın</option>
+              </select>
+            </label>
+            <label>
+              <span class="label"
+                ><span data-i18n="height">Boy</span>
+                <span class="unit">cm</span></span
+              >
+              <input id="f-height" type="number" min="50" max="230" />
+            </label>
+            <label>
+              <span class="label"
+                ><span data-i18n="weight">Kilo</span>
+                <span class="unit">kg</span></span
+              >
+              <input id="f-weight" type="number" min="2" max="250" />
+            </label>
+            <label>
+              <span class="label"
+                ><span data-i18n="baselineAct">Baz ACT</span>
+                <span class="unit">s</span></span
+              >
+              <input id="f-baseline" type="number" min="60" max="250" />
+            </label>
+            <label>
+              <span class="label"
+                ><span data-i18n="clock">Saat</span>
+                <span class="unit">min</span></span
+              >
+              <input id="f-tnow" type="number" min="0" />
+            </label>
+          </div>
+          <div
+            style="
+              margin-top: 1rem;
+              padding-top: 1rem;
+              border-top: 1px solid hsl(var(--border));
+            "
+          >
+            <div class="computed-row">
+              <span data-i18n="bsa">VYA (DuBois)</span>
+              <span><span id="r-bsa">—</span> m²</span>
+            </div>
+            <small class="formula">
+              <span class="eq">BSA = 0.007184 × W<sup>0.425</sup> × H<sup>0.725</sup></span>
+              <a class="cite" href="#ref1">[1]</a>
+            </small>
+
+            <div class="computed-row" style="margin-top: 0.6rem">
+              <span data-i18n="bloodVolume">Kan hacmi</span>
+              <span><span id="r-bv">—</span> mL</span>
+            </div>
+            <small class="formula" id="bv-formula">
+              <span class="eq">TBV♂ = 0.3669·h³ + 0.03219·W + 0.6041 (L)</span>
+              <a class="cite" href="#ref2">[2]</a>
+            </small>
+
+            <div class="computed-row highlight" style="margin-top: 0.6rem">
+              <span data-i18n="suggestedLoading">Önerilen yükleme</span>
+              <span><span id="r-load">—</span> IU</span>
+            </div>
+            <small class="formula">
+              <span class="eq">Loading = max(250, ACT<sub>hedef</sub> × 0.625) IU/kg × W</span>
+              <a class="cite" href="#ref3">[3]</a><a class="cite" href="#ref4">[4]</a>
+              <span data-i18n="ageAdj">Yaş düzeltmesi: ≥70 ×0.92, ≤18 ×1.05</span>
+            </small>
+          </div>
+        </section>
+
+        <details class="card" open>
+          <summary
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <h3 class="serif" data-i18n="alarmLimits">Alarm limitleri</h3>
+            <span style="color: hsl(var(--muted-fg)); font-size: 0.85rem"
+              >▾</span
+            >
+          </summary>
+          <div class="grid-2" style="margin-top: 0.85rem">
+            <label>
+              <span class="label"
+                ><span data-i18n="targetAct">Hedef ACT</span>
+                <span class="unit">s</span></span
+              >
+              <input id="t-act" type="number" />
+              <small class="formula" data-i18n="targetActPhys">
+                Fizyolojik: KPB için ≥ 480 s
+              </small>
+            </label>
+            <label>
+              <span class="label"
+                ><span data-i18n="targetHep">Hedef [Hep]</span>
+                <span class="unit">IU/mL</span></span
+              >
+              <input id="t-hep" type="number" step="0.1" />
+              <small class="formula" data-i18n="targetHepPhys">
+                Fizyolojik: 3.0–4.0 IU/mL
+              </small>
+            </label>
+            <label>
+              <span class="label"
+                ><span data-i18n="actMin">ACT min</span>
+                <span class="unit">s</span></span
+              >
+              <input id="t-actLow" type="number" />
+              <small class="formula" data-i18n="actLowPhys">
+                Pıhtılaşma riski: &lt; 400 s
+              </small>
+            </label>
+            <label>
+              <span class="label"
+                ><span data-i18n="actMax">ACT max</span>
+                <span class="unit">s</span></span
+              >
+              <input id="t-actHigh" type="number" />
+              <small class="formula" data-i18n="actHighPhys">
+                Kanama riski: &gt; 700 s
+              </small>
+            </label>
+            <label>
+              <span class="label" data-i18n="hriMin">HRI min</span>
+              <input id="t-hriLow" type="number" step="0.1" />
+              <small class="formula" data-i18n="hriLowPhys">
+                Düşük yanıt &lt; 0.6
+              </small>
+            </label>
+            <label>
+              <span class="label" data-i18n="hriMax">HRI max</span>
+              <input id="t-hriHigh" type="number" step="0.1" />
+              <small class="formula" data-i18n="hriHighPhys">
+                Yüksek yanıt &gt; 1.6
+              </small>
+            </label>
+          </div>
+          <small
+            class="formula"
+            style="margin-top: 0.7rem; padding-top: 0.6rem; border-top: 1px solid hsl(var(--border));"
+          >
+            <span data-i18n="limitsRefNote"
+              >Limitler Bull et al. (1975) ve STS/SCA/AmSECT 2018 kılavuzuna dayanır.</span
+            >
+            <a class="cite" href="#ref3">[3]</a><a class="cite" href="#ref4">[4]</a>
+          </small>
+        </details>
+
+        <button class="btn" id="btn-new" data-i18n="newCase">Yeni Vaka</button>
+      </aside>
+
+      <!-- CENTER -->
+      <main class="stack">
+        <section class="metrics">
+          <div class="metric" id="m-act">
+            <div class="label">
+              <span data-i18n="mACT">ACT</span>
+              <a class="cite" href="#ref5">[5]</a>
+            </div>
+            <div>
+              <span class="v" id="v-act">—</span><span class="u">s</span>
+            </div>
+            <div class="h" id="h-act">—</div>
+            <small class="formula" data-i18n="actFormula">
+              Hattersley aktive pıhtılaşma süresi (kaolin/celite)
+            </small>
+          </div>
+          <div class="metric" id="m-hri">
+            <div class="label">
+              HRI <a class="cite" href="#ref3">[3]</a>
+            </div>
+            <div><span class="v" id="v-hri">—</span></div>
+            <div class="h" data-i18n="mHRIhint">Heparin Yanıt İndeksi</div>
+            <small class="formula">
+              <span class="eq">HRI = (ACT − ACT<sub>baz</sub>) / (IU/kg)</span>
+            </small>
+          </div>
+          <div class="metric" id="m-conc">
+            <div class="label">
+              <span data-i18n="mHep">[Heparin]</span>
+              <a class="cite" href="#ref2">[2]</a>
+            </div>
+            <div>
+              <span class="v" id="v-conc">—</span><span class="u">IU/mL</span>
+            </div>
+            <div class="h" id="h-conc">—</div>
+            <small class="formula">
+              <span class="eq">[Hep] = Kalıntı IU / TBV (mL)</span>
+            </small>
+          </div>
+          <div class="metric" id="m-circ">
+            <div class="label">
+              <span data-i18n="mCirc">Dolaşımdaki Heparin</span>
+              <a class="cite" href="#ref6">[6]</a>
+            </div>
+            <div>
+              <span class="v" id="v-circ">—</span><span class="u">IU</span>
+            </div>
+            <div class="h" id="h-circ">—</div>
+            <small class="formula">
+              <span class="eq">Kalıntı = Σ Heparin × 0.5<sup>(t/90 dk)</sup></span>
+            </small>
+          </div>
+        </section>
+
+        <section class="card">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+            "
+          >
+            <div>
+              <h3 class="serif" data-i18n="chartTitle">
+                ACT &amp; Kümülatif Heparin
+              </h3>
+              <p
+                class="mono"
+                style="
+                  font-size: 0.7rem;
+                  color: hsl(var(--muted-fg));
+                  margin: 0.25rem 0 0;
+                "
+              >
+                <span data-i18n="chartRef">Hedef</span>:
+                <span id="chartTarget">480</span>s
+              </p>
+            </div>
+          </div>
+          <div class="chart-wrap" id="chart"></div>
+        </section>
+
+        <section class="card">
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 0.85rem;
+            "
+          >
+            <h3 class="serif" data-i18n="logTitle">Ölçüm Kaydı</h3>
+            <span
+              class="mono"
+              style="font-size: 0.7rem; color: hsl(var(--muted-fg))"
+            >
+              T+<span id="t-display">0</span>m
+            </span>
+          </div>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 1fr 1fr auto;
+              gap: 0.75rem;
+              align-items: end;
+            "
+          >
+            <label>
+              <span class="label"
+                ><span data-i18n="actResult">ACT sonucu</span>
+                <span class="unit">s</span></span
+              >
+              <input id="m-newAct" type="number" value="540" />
+            </label>
+            <label>
+              <span class="label"
+                ><span data-i18n="heparinGiven">Verilen heparin</span>
+                <span class="unit">IU</span></span
+              >
+              <input id="m-newDose" type="number" step="500" value="0" />
+            </label>
+            <button
+              class="btn btn-primary"
+              id="btn-add"
+              style="width: auto; padding-left: 1.25rem; padding-right: 1.25rem"
+              data-i18n="addReading"
+            >
+              + Ekle
+            </button>
+          </div>
+          <div style="max-height: 180px; overflow-y: auto">
+            <table class="log">
+              <thead>
+                <tr>
+                  <th>T</th>
+                  <th>ACT</th>
+                  <th>Σ <span data-i18n="heparin">Heparin</span></th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="logBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+
+      <!-- RIGHT -->
+      <aside class="stack">
+        <section class="card">
+          <h3 class="serif" data-i18n="recommendation">Öneri</h3>
+          <div class="stack" style="gap: 1rem; margin-top: 0.5rem">
+            <div class="reco-row">
+              <div class="lbl">
+                <span data-i18n="initialHep">Başlangıç Heparini</span>
+                <a class="cite" href="#ref3">[3]</a><a class="cite" href="#ref4">[4]</a>
+              </div>
+              <div>
+                <span class="val" id="r-init">—</span>
+                <span class="u mono" style="font-size: 0.85rem">IU</span>
+              </div>
+              <div class="sub">≈ <span id="r-init-perkg">—</span> IU/kg</div>
+              <small class="formula" data-i18n="initialFormula">
+                Tipik aralık: 300–400 IU/kg
+              </small>
+            </div>
+            <div class="reco-row neutral" id="reco-add">
+              <div class="lbl">
+                <span data-i18n="additionalHep">Ek Heparin</span>
+                <a class="cite" href="#ref3">[3]</a>
+              </div>
+              <div>
+                <span class="val" id="r-add">—</span>
+                <span
+                  class="u mono"
+                  style="font-size: 0.85rem"
+                  id="r-add-unit"
+                ></span>
+              </div>
+              <div class="sub" id="r-add-sub" data-i18n="withinTarget">
+                Hedef içinde
+              </div>
+              <small class="formula">
+                <span class="eq">Δ = (ACT<sub>hedef</sub> − ACT) / HRI × W</span>
+              </small>
+            </div>
+            <div class="reco-row neutral">
+              <div class="lbl">
+                <span data-i18n="reversal">Geri Çevirme (Protamin)</span>
+                <a class="cite" href="#ref3">[3]</a><a class="cite" href="#ref4">[4]</a>
+              </div>
+              <div>
+                <span class="val" id="r-prot">—</span>
+                <span class="u mono" style="font-size: 0.85rem">mg</span>
+              </div>
+              <div class="sub" data-i18n="perResidual">
+                Her 100 IU kalıntı için 1 mg
+              </div>
+              <small class="formula">
+                <span class="eq">Protamin (mg) = Kalıntı Heparin (IU) ÷ 100</span>
+              </small>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h3 class="serif" data-i18n="alerts">Uyarılar</h3>
+          <div id="alertList" style="margin-top: 0.5rem"></div>
+        </section>
+
+        <details class="card" open>
+          <summary
+            style="display:flex;justify-content:space-between;align-items:center"
+          >
+            <h3 class="serif" data-i18n="physRanges">Fizyolojik Aralıklar</h3>
+            <span style="color: hsl(var(--muted-fg)); font-size: 0.85rem">▾</span>
+          </summary>
+          <table class="ranges-table">
+            <thead>
+              <tr>
+                <th data-i18n="rangeParam">Parametre</th>
+                <th data-i18n="rangeNormal">Normal / Hedef</th>
+                <th data-i18n="rangeRef">Kaynak</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td data-i18n="rangeBaselineAct">Bazal ACT</td>
+                <td class="range">80–140 s</td>
+                <td><a class="cite" href="#ref5">[5]</a></td>
+              </tr>
+              <tr>
+                <td data-i18n="rangeCpbAct">KPB sırasında ACT</td>
+                <td class="range">≥ 480 s</td>
+                <td><a class="cite" href="#ref3">[3]</a><a class="cite" href="#ref4">[4]</a></td>
+              </tr>
+              <tr>
+                <td data-i18n="rangeHepConc">Heparin konsantrasyonu</td>
+                <td class="range">3.0–4.0 IU/mL</td>
+                <td><a class="cite" href="#ref4">[4]</a></td>
+              </tr>
+              <tr>
+                <td data-i18n="rangeHri">HRI</td>
+                <td class="range">0.6–1.6</td>
+                <td><a class="cite" href="#ref3">[3]</a></td>
+              </tr>
+              <tr>
+                <td data-i18n="rangeBsa">VYA (yetişkin)</td>
+                <td class="range">1.5–2.2 m²</td>
+                <td><a class="cite" href="#ref1">[1]</a></td>
+              </tr>
+              <tr>
+                <td data-i18n="rangeTbv">Toplam kan hacmi</td>
+                <td class="range">65–75 mL/kg</td>
+                <td><a class="cite" href="#ref2">[2]</a></td>
+              </tr>
+              <tr>
+                <td data-i18n="rangeHalflife">Heparin yarılanma (KPB)</td>
+                <td class="range">60–90 dk</td>
+                <td><a class="cite" href="#ref6">[6]</a></td>
+              </tr>
+              <tr>
+                <td data-i18n="rangeProtRatio">Protamin oranı</td>
+                <td class="range">1 mg / 100 IU</td>
+                <td><a class="cite" href="#ref3">[3]</a><a class="cite" href="#ref4">[4]</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+
+        <details class="card">
+          <summary
+            style="display:flex;justify-content:space-between;align-items:center"
+          >
+            <h3 class="serif" data-i18n="references">Referanslar</h3>
+            <span style="color: hsl(var(--muted-fg)); font-size: 0.85rem">▾</span>
+          </summary>
+          <ol class="refs-list">
+            <li id="ref1">
+              DuBois D, DuBois EF. <em>A formula to estimate the approximate
+              surface area if height and weight be known.</em> Arch Intern Med.
+              1916;17:863–71.
+            </li>
+            <li id="ref2">
+              Nadler SB, Hidalgo JU, Bloch T. <em>Prediction of blood volume in
+              normal human adults.</em> Surgery. 1962;51(2):224–32.
+            </li>
+            <li id="ref3">
+              Bull BS, Korpman RA, Huse WM, Briggs BD. <em>Heparin therapy
+              during extracorporeal circulation. I &amp; II.</em> J Thorac
+              Cardiovasc Surg. 1975;69(5):674–89.
+            </li>
+            <li id="ref4">
+              Shore-Lesserson L, Baker RA, Ferraris VA, et al. <em>STS/SCA/AmSECT
+              Clinical Practice Guidelines: Anticoagulation During
+              Cardiopulmonary Bypass.</em> Ann Thorac Surg. 2018;105(2):650–62.
+            </li>
+            <li id="ref5">
+              Hattersley PG. <em>Activated coagulation time of whole blood.</em>
+              JAMA. 1966;196(5):436–40.
+            </li>
+            <li id="ref6">
+              Hirsh J, Bauer KA, Donati MB, et al. <em>Parenteral
+              anticoagulants: ACCP Evidence-Based Clinical Practice Guidelines
+              (8th Ed.).</em> Chest. 2008;133(6 Suppl):141S–159S.
+            </li>
+          </ol>
+        </details>
+
+        <p class="disclaimer" data-i18n="disclaimer">
+          Yalnızca karar destek aracıdır. Tüm dozlar nitelikli bir perfüzyonist
+          veya anestezi uzmanı tarafından doğrulanmalıdır. ACT ölçüm cihazıyla
+          birlikte kullanılır.
+        </p>
+      </aside>
+    </div>
+
+    <script>
+      // ---------- i18n ----------
+      const I18N = {
+        tr: {
+          subtitle: "Klinik Konsol",
+          patient: "Hasta",
+          age: "Yaş",
+          sex: "Cinsiyet",
+          male: "Erkek",
+          female: "Kadın",
+          height: "Boy",
+          weight: "Kilo",
+          baselineAct: "Baz ACT",
+          clock: "Saat",
+          unitYrs: "yıl",
+          bsa: "VYA (DuBois)",
+          bloodVolume: "Kan hacmi",
+          suggestedLoading: "Önerilen yükleme",
+          alarmLimits: "Alarm limitleri",
+          targetAct: "Hedef ACT",
+          targetHep: "Hedef [Hep]",
+          actMin: "ACT min",
+          actMax: "ACT max",
+          hriMin: "HRI min",
+          hriMax: "HRI max",
+          newCase: "Yeni Vaka",
+          mACT: "ACT",
+          mHep: "[Heparin]",
+          mCirc: "Dolaşımdaki Heparin",
+          mHRIhint: "Heparin Yanıt İndeksi",
+          chartTitle: "ACT & Kümülatif Heparin",
+          chartRef: "Hedef",
+          logTitle: "Ölçüm Kaydı",
+          actResult: "ACT sonucu",
+          heparinGiven: "Verilen heparin",
+          addReading: "+ Ekle",
+          heparin: "Heparin",
+          recommendation: "Öneri",
+          initialHep: "Başlangıç Heparini",
+          additionalHep: "Ek Heparin",
+          toReach: "{x}s ACT'a ulaşmak için",
+          withinTarget: "Hedef içinde",
+          reversal: "Geri Çevirme (Protamin)",
+          perResidual: "Her 100 IU kalıntı için 1 mg",
+          alerts: "Uyarılar",
+          disclaimer:
+            "Yalnızca karar destek aracıdır. Tüm dozlar nitelikli bir perfüzyonist veya anestezi uzmanı tarafından doğrulanmalıdır. ACT ölçüm cihazıyla birlikte kullanılır.",
+          themeLight: "Açık",
+          themeDark: "Koyu",
+          themeRandom: "Rastgele",
+          statusStable: "STABİL",
+          statusReview: "İNCELE",
+          statusAction: "MÜDAHALE GEREKLİ",
+          targetGte: "Hedef ≥ {x}s",
+          targetEq: "Hedef {x} IU/mL",
+          cumulative: "Kümülatif {x} IU",
+          aActLowL: "ACT ÇOK DÜŞÜK",
+          aActLowD:
+            "ACT {a}s < {b}s — devre içinde pıhtılaşma riski. Ek heparin düşünün.",
+          aActSubL: "ACT hedefin altında",
+          aActSubD: "ACT {a}s < hedef {b}s.",
+          aActHighL: "ACT çok yüksek",
+          aActHighD:
+            "ACT {a}s > {b}s — kanama riski; protamin planını gözden geçirin.",
+          aActOkL: "ACT aralıkta",
+          aActOkD: "ACT {a}s.",
+          aHriLowL: "Düşük heparin yanıtı",
+          aHriLowD:
+            "HRI {h} — hasta yetersiz yanıt veriyor. Daha yüksek doz veya AT-III eksikliği şüphesi.",
+          aHriHighL: "Yüksek heparin yanıtı",
+          aHriHighD: "HRI {h} — güçlü yanıt, dikkatle azaltın.",
+          aConcLowL: "Heparin konsantrasyonu düşük",
+          aConcLowD: "{c} IU/mL — hedef {t} IU/mL altında.",
+          confirmReset:
+            "Yeni vaka başlatılsın mı? Tüm ölçümler silinecek.",
+          unitMin: "min",
+          ageAdj: "Yaş düzeltmesi: ≥70 ×0.92, ≤18 ×1.05",
+          targetActPhys: "Fizyolojik: KPB için ≥ 480 s",
+          targetHepPhys: "Fizyolojik: 3.0–4.0 IU/mL",
+          actLowPhys: "Pıhtılaşma riski: < 400 s",
+          actHighPhys: "Kanama riski: > 700 s",
+          hriLowPhys: "Düşük yanıt < 0.6",
+          hriHighPhys: "Yüksek yanıt > 1.6",
+          limitsRefNote:
+            "Limitler Bull et al. (1975) ve STS/SCA/AmSECT 2018 kılavuzuna dayanır.",
+          actFormula: "Hattersley aktive pıhtılaşma süresi (kaolin/celite)",
+          initialFormula: "Tipik aralık: 300–400 IU/kg",
+          physRanges: "Fizyolojik Aralıklar",
+          references: "Referanslar",
+          rangeParam: "Parametre",
+          rangeNormal: "Normal / Hedef",
+          rangeRef: "Kaynak",
+          rangeBaselineAct: "Bazal ACT",
+          rangeCpbAct: "KPB sırasında ACT",
+          rangeHepConc: "Heparin konsantrasyonu",
+          rangeHri: "HRI",
+          rangeBsa: "VYA (yetişkin)",
+          rangeTbv: "Toplam kan hacmi",
+          rangeHalflife: "Heparin yarılanma (KPB)",
+          rangeProtRatio: "Protamin oranı",
+          bvFormulaM:
+            "TBV♂ = 0.3669·h³ + 0.03219·W + 0.6041 (L)",
+          bvFormulaF:
+            "TBV♀ = 0.3561·h³ + 0.03308·W + 0.1833 (L)",
+        },
+        en: {
+          subtitle: "Clinical Console",
+          patient: "Patient",
+          age: "Age",
+          sex: "Sex",
+          male: "Male",
+          female: "Female",
+          height: "Height",
+          weight: "Weight",
+          baselineAct: "Baseline ACT",
+          clock: "Clock",
+          unitYrs: "yrs",
+          bsa: "BSA (DuBois)",
+          bloodVolume: "Blood volume",
+          suggestedLoading: "Suggested loading",
+          alarmLimits: "Alarm limits",
+          targetAct: "Target ACT",
+          targetHep: "Target [Hep]",
+          actMin: "ACT min",
+          actMax: "ACT max",
+          hriMin: "HRI min",
+          hriMax: "HRI max",
+          newCase: "New Case",
+          mACT: "ACT",
+          mHep: "[Heparin]",
+          mCirc: "Circulating Heparin",
+          mHRIhint: "Heparin Response Index",
+          chartTitle: "ACT & Cumulative Heparin",
+          chartRef: "Target",
+          logTitle: "Log Measurement",
+          actResult: "ACT result",
+          heparinGiven: "Heparin given",
+          addReading: "+ Add",
+          heparin: "Heparin",
+          recommendation: "Recommendation",
+          initialHep: "Initial Heparin",
+          additionalHep: "Additional Heparin",
+          toReach: "to reach {x}s ACT",
+          withinTarget: "Within target",
+          reversal: "Reversal (Protamine)",
+          perResidual: "1 mg per 100 IU residual",
+          alerts: "Alerts",
+          disclaimer:
+            "Decision-support tool only. All doses must be confirmed by a qualified perfusionist or anesthesiologist. Use in conjunction with an ACT measurement device.",
+          themeLight: "Light",
+          themeDark: "Dark",
+          themeRandom: "Random",
+          statusStable: "STABLE",
+          statusReview: "REVIEW",
+          statusAction: "ACTION REQUIRED",
+          targetGte: "Target ≥ {x}s",
+          targetEq: "Target {x} IU/mL",
+          cumulative: "Cumulative {x} IU",
+          aActLowL: "ACT TOO LOW",
+          aActLowD:
+            "ACT {a}s < {b}s — risk of clot in circuit. Consider additional heparin.",
+          aActSubL: "ACT below target",
+          aActSubD: "ACT {a}s < target {b}s.",
+          aActHighL: "ACT very high",
+          aActHighD:
+            "ACT {a}s > {b}s — bleeding risk; review protamine plan.",
+          aActOkL: "ACT in range",
+          aActOkD: "ACT {a}s.",
+          aHriLowL: "Low heparin response",
+          aHriLowD:
+            "HRI {h} — patient under-responds. Higher dose or AT-III deficiency suspected.",
+          aHriHighL: "High heparin response",
+          aHriHighD: "HRI {h} — strong response, taper carefully.",
+          aConcLowL: "Heparin concentration low",
+          aConcLowD: "{c} IU/mL — below target {t} IU/mL.",
+          confirmReset: "Start a new case? All measurements will be cleared.",
+          unitMin: "min",
+          ageAdj: "Age adjustment: ≥70 ×0.92, ≤18 ×1.05",
+          targetActPhys: "Physiologic: ≥ 480 s for CPB",
+          targetHepPhys: "Physiologic: 3.0–4.0 IU/mL",
+          actLowPhys: "Clot risk: < 400 s",
+          actHighPhys: "Bleeding risk: > 700 s",
+          hriLowPhys: "Low response < 0.6",
+          hriHighPhys: "High response > 1.6",
+          limitsRefNote:
+            "Limits derive from Bull et al. (1975) and the STS/SCA/AmSECT 2018 guideline.",
+          actFormula: "Hattersley activated coagulation time (kaolin/celite)",
+          initialFormula: "Typical range: 300–400 IU/kg",
+          physRanges: "Physiologic Ranges",
+          references: "References",
+          rangeParam: "Parameter",
+          rangeNormal: "Normal / Target",
+          rangeRef: "Source",
+          rangeBaselineAct: "Baseline ACT",
+          rangeCpbAct: "ACT during CPB",
+          rangeHepConc: "Heparin concentration",
+          rangeHri: "HRI",
+          rangeBsa: "BSA (adult)",
+          rangeTbv: "Total blood volume",
+          rangeHalflife: "Heparin half-life (CPB)",
+          rangeProtRatio: "Protamine ratio",
+          bvFormulaM: "TBV♂ = 0.3669·h³ + 0.03219·W + 0.6041 (L)",
+          bvFormulaF: "TBV♀ = 0.3561·h³ + 0.03308·W + 0.1833 (L)",
+        },
+        es: {
+          subtitle: "Consola Clínica",
+          patient: "Paciente",
+          age: "Edad",
+          sex: "Sexo",
+          male: "Hombre",
+          female: "Mujer",
+          height: "Altura",
+          weight: "Peso",
+          baselineAct: "ACT basal",
+          clock: "Reloj",
+          unitYrs: "años",
+          bsa: "ASC (DuBois)",
+          bloodVolume: "Volumen sanguíneo",
+          suggestedLoading: "Carga sugerida",
+          alarmLimits: "Límites de alarma",
+          targetAct: "ACT objetivo",
+          targetHep: "[Hep] objetivo",
+          actMin: "ACT mín",
+          actMax: "ACT máx",
+          hriMin: "HRI mín",
+          hriMax: "HRI máx",
+          newCase: "Nuevo caso",
+          mACT: "ACT",
+          mHep: "[Heparina]",
+          mCirc: "Heparina circulante",
+          mHRIhint: "Índice de respuesta a heparina",
+          chartTitle: "ACT y heparina acumulada",
+          chartRef: "Objetivo",
+          logTitle: "Registro de medición",
+          actResult: "Resultado ACT",
+          heparinGiven: "Heparina administrada",
+          addReading: "+ Añadir",
+          heparin: "Heparina",
+          recommendation: "Recomendación",
+          initialHep: "Heparina inicial",
+          additionalHep: "Heparina adicional",
+          toReach: "para alcanzar {x}s ACT",
+          withinTarget: "Dentro del objetivo",
+          reversal: "Reversión (Protamina)",
+          perResidual: "1 mg por cada 100 IU residual",
+          alerts: "Alertas",
+          disclaimer:
+            "Herramienta solo de apoyo a la decisión. Todas las dosis deben ser confirmadas por un perfusionista o anestesiólogo cualificado. Usar junto con un dispositivo de medición ACT.",
+          themeLight: "Claro",
+          themeDark: "Oscuro",
+          themeRandom: "Aleatorio",
+          statusStable: "ESTABLE",
+          statusReview: "REVISAR",
+          statusAction: "ACCIÓN REQUERIDA",
+          targetGte: "Objetivo ≥ {x}s",
+          targetEq: "Objetivo {x} IU/mL",
+          cumulative: "Acumulado {x} IU",
+          aActLowL: "ACT DEMASIADO BAJO",
+          aActLowD:
+            "ACT {a}s < {b}s — riesgo de coágulo en el circuito. Considerar heparina adicional.",
+          aActSubL: "ACT bajo el objetivo",
+          aActSubD: "ACT {a}s < objetivo {b}s.",
+          aActHighL: "ACT muy alto",
+          aActHighD:
+            "ACT {a}s > {b}s — riesgo de sangrado; revisar plan de protamina.",
+          aActOkL: "ACT en rango",
+          aActOkD: "ACT {a}s.",
+          aHriLowL: "Respuesta baja a heparina",
+          aHriLowD:
+            "HRI {h} — paciente con respuesta insuficiente. Sospecha de dosis insuficiente o déficit de AT-III.",
+          aHriHighL: "Respuesta alta a heparina",
+          aHriHighD: "HRI {h} — respuesta fuerte, reducir con cuidado.",
+          aConcLowL: "Concentración de heparina baja",
+          aConcLowD: "{c} IU/mL — bajo el objetivo {t} IU/mL.",
+          confirmReset:
+            "¿Iniciar un nuevo caso? Se eliminarán todas las mediciones.",
+          unitMin: "min",
+          ageAdj: "Ajuste por edad: ≥70 ×0.92, ≤18 ×1.05",
+          targetActPhys: "Fisiológico: ≥ 480 s para CEC",
+          targetHepPhys: "Fisiológico: 3.0–4.0 IU/mL",
+          actLowPhys: "Riesgo de coágulo: < 400 s",
+          actHighPhys: "Riesgo de sangrado: > 700 s",
+          hriLowPhys: "Respuesta baja < 0.6",
+          hriHighPhys: "Respuesta alta > 1.6",
+          limitsRefNote:
+            "Los límites se basan en Bull et al. (1975) y la guía STS/SCA/AmSECT 2018.",
+          actFormula: "Tiempo de coagulación activado de Hattersley (caolín/celite)",
+          initialFormula: "Rango típico: 300–400 IU/kg",
+          physRanges: "Rangos Fisiológicos",
+          references: "Referencias",
+          rangeParam: "Parámetro",
+          rangeNormal: "Normal / Objetivo",
+          rangeRef: "Fuente",
+          rangeBaselineAct: "ACT basal",
+          rangeCpbAct: "ACT durante CEC",
+          rangeHepConc: "Concentración de heparina",
+          rangeHri: "HRI",
+          rangeBsa: "ASC (adulto)",
+          rangeTbv: "Volumen sanguíneo total",
+          rangeHalflife: "Vida media heparina (CEC)",
+          rangeProtRatio: "Relación protamina",
+          bvFormulaM: "TBV♂ = 0.3669·h³ + 0.03219·W + 0.6041 (L)",
+          bvFormulaF: "TBV♀ = 0.3561·h³ + 0.03308·W + 0.1833 (L)",
+        },
+      };
+
+      let lang = "tr";
+      const t = (k, vars) => {
+        let s = (I18N[lang] && I18N[lang][k]) || I18N.en[k] || k;
+        if (vars)
+          for (const [vk, vv] of Object.entries(vars))
+            s = s.replaceAll("{" + vk + "}", vv);
+        return s;
+      };
+      const applyI18n = () => {
+        document.documentElement.lang = lang;
+        document.querySelectorAll("[data-i18n]").forEach((el) => {
+          const k = el.getAttribute("data-i18n");
+          el.textContent = t(k);
+        });
+        render();
+      };
+
+      // ---------- Clinical math ----------
+      const bsa = (h, w) =>
+        h <= 0 || w <= 0
+          ? 0
+          : 0.007184 * Math.pow(w, 0.425) * Math.pow(h, 0.725);
+      const bloodVolMl = (p) => {
+        if (p.heightCm <= 0 || p.weightKg <= 0) return 0;
+        const hM = p.heightCm / 100;
+        const h3 = hM * hM * hM;
+        const tbvL =
+          p.sex === "male"
+            ? 0.3669 * h3 + 0.03219 * p.weightKg + 0.6041
+            : 0.3561 * h3 + 0.03308 * p.weightKg + 0.1833;
+        return Math.max(0, tbvL * 1000);
+      };
+      const suggestedLoading = (p, targets) => {
+        const baseIuPerKg = Math.max(250, targets.targetAct * 0.625);
+        let dose = p.weightKg * baseIuPerKg;
+        if (p.age >= 70) dose *= 0.92;
+        if (p.age <= 18) dose *= 1.05;
+        return Math.round(dose / 100) * 100;
+      };
+      const concIuPerMl = (cum, bvMl) => (bvMl > 0 ? cum / bvMl : 0);
+      const residual = (cum, mins, halfLife = 90) =>
+        cum <= 0 ? 0 : cum * Math.pow(0.5, Math.max(0, mins) / halfLife);
+      const computeHri = (act, base, iuPerKg) => {
+        if (iuPerKg <= 0) return 0;
+        const observed = Math.max(1, act - base);
+        const r = observed / (iuPerKg * 1.0);
+        return Number(Math.max(0.1, Math.min(3, r)).toFixed(2));
+      };
+      const protamineMg = (resIu) =>
+        Math.max(0, Math.round((resIu / 100) * 10) / 10);
+
+      // ---------- State ----------
+      const state = {
+        patient: { age: 64, sex: "male", heightCm: 178, weightKg: 82 },
+        baseline: 125,
+        tNow: 15,
+        targets: {
+          targetAct: 480,
+          targetHep: 4.0,
+          actLow: 400,
+          actHigh: 700,
+          hriLow: 0.6,
+          hriHigh: 1.6,
+        },
+        measurements: [{ t: 0, act: 125, cum: 0 }],
+        newAct: 540,
+        newDose: 0,
+      };
+
+      // ---------- Form bindings ----------
+      const $ = (id) => document.getElementById(id);
+      const bindNumber = (id, getter, setter, after) => {
+        const el = $(id);
+        el.value = getter();
+        el.addEventListener("input", () => {
+          const v = Number(el.value);
+          if (!Number.isFinite(v)) return;
+          setter(v);
+          if (after) after();
+          render();
+        });
+      };
+
+      function syncForm() {
+        $("f-age").value = state.patient.age;
+        $("f-sex").value = state.patient.sex;
+        $("f-height").value = state.patient.heightCm;
+        $("f-weight").value = state.patient.weightKg;
+        $("f-baseline").value = state.baseline;
+        $("f-tnow").value = state.tNow;
+        $("t-act").value = state.targets.targetAct;
+        $("t-hep").value = state.targets.targetHep;
+        $("t-actLow").value = state.targets.actLow;
+        $("t-actHigh").value = state.targets.actHigh;
+        $("t-hriLow").value = state.targets.hriLow;
+        $("t-hriHigh").value = state.targets.hriHigh;
+        $("m-newAct").value = state.newAct;
+        $("m-newDose").value = state.newDose;
+      }
+
+      function attachInputs() {
+        bindNumber(
+          "f-age",
+          () => state.patient.age,
+          (v) => (state.patient.age = v),
+        );
+        $("f-sex").addEventListener("change", (e) => {
+          state.patient.sex = e.target.value;
+          render();
+        });
+        bindNumber(
+          "f-height",
+          () => state.patient.heightCm,
+          (v) => (state.patient.heightCm = v),
+        );
+        bindNumber(
+          "f-weight",
+          () => state.patient.weightKg,
+          (v) => (state.patient.weightKg = v),
+        );
+        bindNumber(
+          "f-baseline",
+          () => state.baseline,
+          (v) => (state.baseline = v),
+        );
+        bindNumber(
+          "f-tnow",
+          () => state.tNow,
+          (v) => (state.tNow = Math.max(0, v)),
+        );
+        bindNumber(
+          "t-act",
+          () => state.targets.targetAct,
+          (v) => (state.targets.targetAct = v),
+        );
+        bindNumber(
+          "t-hep",
+          () => state.targets.targetHep,
+          (v) => (state.targets.targetHep = v),
+        );
+        bindNumber(
+          "t-actLow",
+          () => state.targets.actLow,
+          (v) => (state.targets.actLow = v),
+        );
+        bindNumber(
+          "t-actHigh",
+          () => state.targets.actHigh,
+          (v) => (state.targets.actHigh = v),
+        );
+        bindNumber(
+          "t-hriLow",
+          () => state.targets.hriLow,
+          (v) => (state.targets.hriLow = v),
+        );
+        bindNumber(
+          "t-hriHigh",
+          () => state.targets.hriHigh,
+          (v) => (state.targets.hriHigh = v),
+        );
+        bindNumber(
+          "m-newAct",
+          () => state.newAct,
+          (v) => (state.newAct = v),
+        );
+        bindNumber(
+          "m-newDose",
+          () => state.newDose,
+          (v) => (state.newDose = v),
+        );
+
+        $("btn-add").addEventListener("click", () => {
+          const last = state.measurements[state.measurements.length - 1];
+          state.measurements.push({
+            t: state.tNow,
+            act: Math.max(60, Math.round(state.newAct)),
+            cum: (last?.cum ?? 0) + Math.max(0, Math.round(state.newDose)),
+          });
+          state.newDose = 0;
+          $("m-newDose").value = 0;
+          render();
+        });
+        $("btn-new").addEventListener("click", () => {
+          if (!confirm(t("confirmReset"))) return;
+          state.measurements = [{ t: 0, act: state.baseline, cum: 0 }];
+          state.tNow = 0;
+          state.newDose = 0;
+          syncForm();
+          render();
+        });
+      }
+
+      // ---------- Theme ----------
+      function setLightTheme() {
+        document.documentElement.classList.remove("dark");
+        const root = document.documentElement.style;
+        [
+          "--bg",
+          "--fg",
+          "--muted",
+          "--muted-fg",
+          "--border",
+          "--card",
+          "--primary",
+          "--primary-fg",
+          "--header-bg",
+          "--header-fg",
+          "--ok",
+          "--warn",
+          "--danger",
+        ].forEach((k) => root.removeProperty(k));
+      }
+      function setDarkTheme() {
+        document.documentElement.classList.add("dark");
+        const root = document.documentElement.style;
+        [
+          "--bg",
+          "--fg",
+          "--muted",
+          "--muted-fg",
+          "--border",
+          "--card",
+          "--primary",
+          "--primary-fg",
+          "--header-bg",
+          "--header-fg",
+          "--ok",
+          "--warn",
+          "--danger",
+        ].forEach((k) => root.removeProperty(k));
+      }
+      function setRandomTheme() {
+        document.documentElement.classList.remove("dark");
+        const isDark = Math.random() < 0.5;
+        const bgHue = Math.floor(Math.random() * 360);
+        const bgSat = isDark ? 12 + Math.random() * 18 : 8 + Math.random() * 30;
+        const bgLight = isDark
+          ? 6 + Math.random() * 8
+          : 92 + Math.random() * 6;
+        const fgLight = isDark ? 92 : 10;
+        const cardLight = isDark
+          ? bgLight + 4
+          : Math.min(100, bgLight + 2);
+        const mutedLight = isDark
+          ? bgLight + 6
+          : Math.max(85, bgLight - 4);
+        const borderLight = isDark
+          ? bgLight + 12
+          : Math.max(80, bgLight - 8);
+
+        const primaryHue = (bgHue + 180 + Math.floor(Math.random() * 60 - 30)) % 360;
+        const primarySat = 55 + Math.floor(Math.random() * 30);
+        const primaryLight = isDark
+          ? 50 + Math.floor(Math.random() * 15)
+          : 35 + Math.floor(Math.random() * 15);
+
+        const r = document.documentElement.style;
+        r.setProperty("--bg", `${bgHue} ${bgSat.toFixed(0)}% ${bgLight.toFixed(0)}%`);
+        r.setProperty("--fg", `${bgHue} ${(bgSat * 0.4).toFixed(0)}% ${fgLight}%`);
+        r.setProperty(
+          "--card",
+          `${bgHue} ${bgSat.toFixed(0)}% ${cardLight.toFixed(0)}%`,
+        );
+        r.setProperty(
+          "--muted",
+          `${bgHue} ${(bgSat * 0.7).toFixed(0)}% ${mutedLight.toFixed(0)}%`,
+        );
+        r.setProperty(
+          "--muted-fg",
+          `${bgHue} ${(bgSat * 0.5).toFixed(0)}% ${isDark ? 60 : 40}%`,
+        );
+        r.setProperty(
+          "--border",
+          `${bgHue} ${(bgSat * 0.6).toFixed(0)}% ${borderLight.toFixed(0)}%`,
+        );
+        r.setProperty(
+          "--primary",
+          `${primaryHue} ${primarySat}% ${primaryLight}%`,
+        );
+        r.setProperty("--primary-fg", `0 0% ${primaryLight > 60 ? 8 : 100}%`);
+        r.setProperty(
+          "--header-bg",
+          `${bgHue} ${(bgSat + 8).toFixed(0)}% ${isDark ? Math.max(3, bgLight - 3).toFixed(0) : Math.max(8, bgLight - 86).toFixed(0)}%`,
+        );
+        r.setProperty("--header-fg", `0 0% 96%`);
+        r.setProperty("--ok", `158 60% ${isDark ? 50 : 38}%`);
+        r.setProperty("--warn", `38 92% ${isDark ? 58 : 45}%`);
+        r.setProperty(
+          "--danger",
+          `${primaryHue} ${primarySat}% ${primaryLight}%`,
+        );
+      }
+
+      function setTheme(name) {
+        if (name === "light") setLightTheme();
+        else if (name === "dark") setDarkTheme();
+        else if (name === "random") setRandomTheme();
+        document
+          .querySelectorAll("[data-theme]")
+          .forEach((b) =>
+            b.classList.toggle("active", b.dataset.theme === name),
+          );
+        try {
+          localStorage.setItem("protakip:theme", name);
+        } catch {}
+      }
+      document
+        .querySelectorAll("[data-theme]")
+        .forEach((b) =>
+          b.addEventListener("click", () => setTheme(b.dataset.theme)),
+        );
+
+      document.querySelectorAll("[data-lang]").forEach((b) =>
+        b.addEventListener("click", () => {
+          lang = b.dataset.lang;
+          document
+            .querySelectorAll("[data-lang]")
+            .forEach((x) => x.classList.toggle("active", x === b));
+          try {
+            localStorage.setItem("protakip:lang", lang);
+          } catch {}
+          applyI18n();
+        }),
+      );
+
+      // ---------- Render ----------
+      function render() {
+        const p = state.patient;
+        const bv = bloodVolMl(p);
+        const surface = bsa(p.heightCm, p.weightKg);
+        const last = state.measurements[state.measurements.length - 1];
+        const elapsed = Math.max(0, state.tNow - (last?.t ?? 0));
+        const resIu = residual(last?.cum ?? 0, elapsed);
+        const conc = concIuPerMl(resIu, bv);
+        const concKg = p.weightKg > 0 ? resIu / p.weightKg : 0;
+        const hri = computeHri(last?.act ?? state.baseline, state.baseline, concKg);
+        const load = suggestedLoading(p, state.targets);
+
+        // computed
+        $("r-bsa").textContent = surface.toFixed(2);
+        $("r-bv").textContent = Math.round(bv).toLocaleString();
+        $("r-load").textContent = load.toLocaleString();
+
+        // BV formula updates with sex
+        const bvFormulaEl = $("bv-formula")?.querySelector(".eq");
+        if (bvFormulaEl) {
+          bvFormulaEl.textContent =
+            p.sex === "female" ? t("bvFormulaF") : t("bvFormulaM");
+        }
+
+        // metrics
+        const actVal = last?.act ?? state.baseline;
+        $("v-act").textContent = actVal;
+        $("v-hri").textContent = hri.toFixed(2);
+        $("v-conc").textContent = conc.toFixed(2);
+        $("v-circ").textContent = Math.round(resIu).toLocaleString();
+
+        $("h-act").textContent = t("targetGte", { x: state.targets.targetAct });
+        $("h-conc").textContent = t("targetEq", { x: state.targets.targetHep });
+        $("h-circ").textContent = t("cumulative", {
+          x: (last?.cum ?? 0).toLocaleString(),
+        });
+
+        const setSev = (el, sev) => {
+          el.classList.remove("s-ok", "s-warn", "s-danger");
+          el.classList.add("s-" + sev);
+        };
+        const actSev =
+          actVal < state.targets.actLow
+            ? "danger"
+            : actVal < state.targets.targetAct
+              ? "warn"
+              : actVal > state.targets.actHigh
+                ? "warn"
+                : "ok";
+        setSev($("m-act"), actSev);
+        setSev(
+          $("m-hri"),
+          hri < state.targets.hriLow || hri > state.targets.hriHigh
+            ? "warn"
+            : "ok",
+        );
+        setSev(
+          $("m-conc"),
+          conc < state.targets.targetHep * 0.7 ? "warn" : "ok",
+        );
+        setSev($("m-circ"), "ok");
+
+        // Recommendation
+        $("r-init").textContent = load.toLocaleString();
+        $("r-init-perkg").textContent =
+          p.weightKg > 0 ? Math.round(load / p.weightKg) : 0;
+
+        let addDose = 0;
+        if (actVal < state.targets.targetAct) {
+          const deficit = state.targets.targetAct - actVal;
+          const ratio = hri > 0 ? hri : 1;
+          addDose = Math.round((deficit / ratio) * p.weightKg / 100) * 100;
+        }
+        $("r-add").textContent = addDose > 0 ? addDose.toLocaleString() : "—";
+        $("r-add-unit").textContent = addDose > 0 ? "IU" : "";
+        $("r-add-sub").textContent =
+          addDose > 0
+            ? t("toReach", { x: state.targets.targetAct })
+            : t("withinTarget");
+        const recoAdd = $("reco-add");
+        recoAdd.classList.remove("warn", "ok", "neutral");
+        recoAdd.classList.add(addDose > 0 ? "warn" : "ok");
+
+        $("r-prot").textContent = protamineMg(resIu).toFixed(1);
+
+        $("t-display").textContent = state.tNow;
+        $("contextInfo").textContent = `T+${state.tNow}m · BSA ${surface.toFixed(2)} m² · BV ${(bv / 1000).toFixed(2)} L`;
+        $("chartTarget").textContent = state.targets.targetAct;
+
+        // Alerts
+        const alerts = [];
+        if (actVal < state.targets.actLow) {
+          alerts.push({
+            sev: "danger",
+            l: t("aActLowL"),
+            d: t("aActLowD", { a: actVal, b: state.targets.actLow }),
+          });
+        } else if (actVal < state.targets.targetAct) {
+          alerts.push({
+            sev: "warn",
+            l: t("aActSubL"),
+            d: t("aActSubD", { a: actVal, b: state.targets.targetAct }),
+          });
+        } else if (actVal > state.targets.actHigh) {
+          alerts.push({
+            sev: "warn",
+            l: t("aActHighL"),
+            d: t("aActHighD", { a: actVal, b: state.targets.actHigh }),
+          });
+        } else {
+          alerts.push({
+            sev: "ok",
+            l: t("aActOkL"),
+            d: t("aActOkD", { a: actVal }),
+          });
+        }
+        if (hri < state.targets.hriLow) {
+          alerts.push({
+            sev: "warn",
+            l: t("aHriLowL"),
+            d: t("aHriLowD", { h: hri }),
+          });
+        } else if (hri > state.targets.hriHigh) {
+          alerts.push({
+            sev: "warn",
+            l: t("aHriHighL"),
+            d: t("aHriHighD", { h: hri }),
+          });
+        }
+        if (conc < state.targets.targetHep * 0.7) {
+          alerts.push({
+            sev: "warn",
+            l: t("aConcLowL"),
+            d: t("aConcLowD", {
+              c: conc.toFixed(2),
+              t: state.targets.targetHep,
+            }),
+          });
+        }
+
+        const sevRank = { ok: 0, warn: 1, danger: 2 };
+        const top = alerts.reduce(
+          (a, b) => (sevRank[b.sev] > sevRank[a] ? b.sev : a),
+          "ok",
+        );
+        const pill = $("statusPill");
+        pill.classList.remove("pill-ok", "pill-warn", "pill-danger");
+        pill.classList.add("pill-" + top);
+        $("statusLabel").textContent =
+          top === "danger"
+            ? t("statusAction")
+            : top === "warn"
+              ? t("statusReview")
+              : t("statusStable");
+
+        const list = $("alertList");
+        list.innerHTML = "";
+        alerts.forEach((a) => {
+          const ic = a.sev === "danger" ? "✕" : a.sev === "warn" ? "△" : "✓";
+          const wrap = document.createElement("div");
+          wrap.className = "alert s-" + a.sev;
+          wrap.innerHTML = `<span class="ic">${ic}</span><div><div class="lbl"></div><div class="det"></div></div>`;
+          wrap.querySelector(".lbl").textContent = a.l;
+          wrap.querySelector(".det").textContent = a.d;
+          list.appendChild(wrap);
+        });
+
+        // Log table
+        const tbody = $("logBody");
+        tbody.innerHTML = "";
+        state.measurements
+          .slice()
+          .reverse()
+          .forEach((m, i) => {
+            const idx = state.measurements.length - 1 - i;
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${m.t}m</td>
+              <td>${m.act}s</td>
+              <td>${m.cum.toLocaleString()} IU</td>
+              <td style="text-align:right">${idx > 0 ? '<button class="del" data-i="' + idx + '" aria-label="del">✕</button>' : ""}</td>`;
+            tbody.appendChild(tr);
+          });
+        tbody.querySelectorAll("button.del").forEach((btn) =>
+          btn.addEventListener("click", () => {
+            const i = Number(btn.dataset.i);
+            state.measurements.splice(i, 1);
+            render();
+          }),
+        );
+
+        renderChart();
+      }
+
+      // Chart (vanilla SVG)
+      function renderChart() {
+        const wrap = $("chart");
+        const W = wrap.clientWidth || 600;
+        const H = wrap.clientHeight || 230;
+        const padL = 36,
+          padR = 36,
+          padT = 12,
+          padB = 22;
+        const innerW = W - padL - padR;
+        const innerH = H - padT - padB;
+        const data = state.measurements;
+        const tMax = Math.max(state.tNow, ...data.map((d) => d.t), 10);
+        const actMax = Math.max(
+          state.targets.targetAct + 100,
+          ...data.map((d) => d.act),
+        );
+        const cumMax = Math.max(1000, ...data.map((d) => d.cum));
+
+        const xScale = (x) => padL + (x / (tMax || 1)) * innerW;
+        const yA = (v) => padT + innerH - (v / actMax) * innerH;
+        const yH = (v) => padT + innerH - (v / cumMax) * innerH;
+
+        const gridLines = [];
+        for (let i = 0; i <= 4; i++) {
+          const y = padT + (innerH / 4) * i;
+          const v = Math.round(actMax - (actMax / 4) * i);
+          const v2 = Math.round(cumMax - (cumMax / 4) * i);
+          gridLines.push(
+            `<line class="chart-grid" x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}"/>` +
+              `<text class="chart-axis" x="${padL - 4}" y="${y + 3}" text-anchor="end">${v}</text>` +
+              `<text class="chart-axis" x="${W - padR + 4}" y="${y + 3}">${v2}</text>`,
+          );
+        }
+        const xTicks = [];
+        const tStep = Math.max(1, Math.ceil(tMax / 6));
+        for (let i = 0; i <= tMax; i += tStep) {
+          xTicks.push(
+            `<text class="chart-axis" x="${xScale(i)}" y="${H - 6}" text-anchor="middle">${i}m</text>`,
+          );
+        }
+
+        const actPath = data
+          .map((d, i) => `${i ? "L" : "M"}${xScale(d.t).toFixed(1)},${yA(d.act).toFixed(1)}`)
+          .join(" ");
+        const hepPath = data
+          .map((d, i) => `${i ? "L" : "M"}${xScale(d.t).toFixed(1)},${yH(d.cum).toFixed(1)}`)
+          .join(" ");
+        const dots = data
+          .map(
+            (d) =>
+              `<circle class="chart-dot" cx="${xScale(d.t).toFixed(1)}" cy="${yA(d.act).toFixed(1)}" r="3"/>`,
+          )
+          .join("");
+        const targetY = yA(state.targets.targetAct);
+
+        wrap.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+          ${gridLines.join("")}
+          ${xTicks.join("")}
+          <line class="chart-target" x1="${padL}" y1="${targetY}" x2="${W - padR}" y2="${targetY}"/>
+          <path class="chart-line-hep" d="${hepPath}"/>
+          <path class="chart-line-act" d="${actPath}"/>
+          ${dots}
+        </svg>`;
+      }
+
+      // ---------- init ----------
+      try {
+        const sl = localStorage.getItem("protakip:lang");
+        if (sl && I18N[sl]) lang = sl;
+      } catch {}
+      try {
+        const st = localStorage.getItem("protakip:theme");
+        if (st) setTheme(st);
+      } catch {}
+      document
+        .querySelectorAll("[data-lang]")
+        .forEach((x) => x.classList.toggle("active", x.dataset.lang === lang));
+
+      syncForm();
+      attachInputs();
+      applyI18n();
+
+      // Tick clock every minute
+      setInterval(() => {
+        state.tNow += 1;
+        $("f-tnow").value = state.tNow;
+        render();
+      }, 60_000);
+
+      window.addEventListener("resize", () => renderChart());
+    </script>
+  </body>
+</html>
