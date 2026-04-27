@@ -224,8 +224,11 @@
         opacity: 0.55;
       }
       input[type="number"],
+      input[type="text"],
       select {
         width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
         background: hsl(var(--bg));
         color: hsl(var(--fg));
         border: 1px solid hsl(var(--border));
@@ -237,14 +240,23 @@
         transition: border-color 0.15s;
       }
       input[type="number"]:focus,
+      input[type="text"]:focus,
       select:focus {
         border-color: hsl(var(--primary));
       }
+      input.invalid, input[aria-invalid="true"] {
+        border-color: hsl(var(--danger));
+      }
+      label { min-width: 0; }
+      label > * { min-width: 0; }
       .grid-2 {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 0.75rem;
+        min-width: 0;
       }
+      .grid-2 > label { min-width: 0; }
+      .card { min-width: 0; overflow: hidden; }
       .grid-3 {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -570,6 +582,599 @@
         color: hsl(var(--primary));
       }
 
+      /* Font scale: small / medium / large */
+      :root[data-font="sm"] { font-size: 14px; }
+      :root[data-font="md"] { font-size: 16px; }
+      :root[data-font="lg"] { font-size: 18px; }
+      :root[data-font="xl"] { font-size: 21px; }
+
+      .font-group {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 0.1rem;
+        padding: 0 0.2rem;
+      }
+      .font-btn {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: hsl(var(--muted-fg));
+        font-family: "Inter", sans-serif;
+        font-weight: 600;
+        padding: 0.2rem 0.35rem;
+        border-radius: 4px;
+        transition: all 0.15s;
+      }
+      .font-btn:hover { color: hsl(var(--fg)); background: hsl(var(--muted)); }
+      .font-btn.active { color: hsl(var(--primary)); }
+      .font-btn.s1 { font-size: 0.7rem; }
+      .font-btn.s2 { font-size: 0.95rem; }
+      .font-btn.s3 { font-size: 1.2rem; }
+      .font-btn.s4 { font-size: 1.45rem; font-weight: 700; }
+
+      /* Flashing red for out-of-limit values */
+      @keyframes flashRed {
+        0%,100% { background: transparent; color: inherit; }
+        50% { background: hsl(var(--danger) / 0.18); color: hsl(var(--danger)); }
+      }
+      .flash-red {
+        animation: flashRed 1s ease-in-out infinite;
+        border-radius: 4px;
+        padding: 0 0.2rem;
+      }
+      .metric.flash-border {
+        border-color: hsl(var(--danger));
+        box-shadow: 0 0 0 2px hsl(var(--danger) / 0.25);
+        animation: borderPulse 1.4s ease-in-out infinite;
+      }
+      @keyframes borderPulse {
+        0%,100% { box-shadow: 0 0 0 2px hsl(var(--danger) / 0.15); }
+        50% { box-shadow: 0 0 0 4px hsl(var(--danger) / 0.45); }
+      }
+
+      .hri-pill {
+        display: inline-block;
+        margin-left: 0.4rem;
+        padding: 0.05rem 0.4rem;
+        font-size: 0.55rem;
+        font-family: "Space Mono", monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        border-radius: 999px;
+        background: hsl(var(--muted));
+        color: hsl(var(--muted-fg));
+      }
+      .hri-pill.low { background: hsl(var(--warn) / 0.2); color: hsl(var(--warn)); }
+      .hri-pill.high { background: hsl(var(--danger) / 0.2); color: hsl(var(--danger)); }
+
+      .correction-note {
+        display: block;
+        margin-top: 0.35rem;
+        padding: 0.4rem 0.55rem;
+        font-size: 0.68rem;
+        font-family: "Inter", sans-serif;
+        color: hsl(var(--danger));
+        background: hsl(var(--danger) / 0.08);
+        border-left: 2px solid hsl(var(--danger));
+        border-radius: 3px;
+      }
+
+      .predicted-block {
+        margin-top: 0.45rem;
+        padding: 0.5rem 0.6rem;
+        background: hsl(var(--muted) / 0.4);
+        border: 1px dashed hsl(var(--border));
+        border-radius: 5px;
+        font-family: "Space Mono", monospace;
+        font-size: 0.68rem;
+        color: hsl(var(--fg) / 0.85);
+      }
+      .predicted-block .pred-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 0.5rem;
+      }
+      .predicted-block .pred-row + .pred-row { margin-top: 0.25rem; }
+      .predicted-block .pred-val { color: hsl(var(--primary)); font-weight: 600; }
+      .predicted-block .pred-label {
+        font-size: 0.55rem;
+        color: hsl(var(--muted-fg));
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 0.3rem;
+      }
+
+      /* Modal */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: hsl(0 0% 0% / 0.55);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+        padding: 1rem;
+      }
+      .modal-backdrop.open { display: flex; }
+      .modal {
+        background: hsl(var(--card));
+        color: hsl(var(--fg));
+        border: 1px solid hsl(var(--border));
+        border-radius: 8px;
+        max-width: 480px;
+        width: 100%;
+        max-height: 90vh;
+        overflow: auto;
+        padding: 1.25rem;
+        box-shadow: 0 10px 40px hsl(0 0% 0% / 0.4);
+      }
+      .modal.modal-lg { max-width: 720px; }
+      .modal-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.85rem;
+      }
+      .modal-head h3 {
+        margin: 0;
+        font-family: "Cormorant Garamond", serif;
+        font-size: 1.3rem;
+      }
+      .modal-close {
+        background: transparent;
+        border: none;
+        color: hsl(var(--muted-fg));
+        font-size: 1.4rem;
+        cursor: pointer;
+        line-height: 1;
+        padding: 0.1rem 0.4rem;
+      }
+      .modal-close:hover { color: hsl(var(--fg)); }
+
+      /* Calculator */
+      /* Medical calculator */
+      .medcalc-tabs {
+        display: flex;
+        gap: 0.4rem;
+        margin-bottom: 0.6rem;
+        border-bottom: 1px solid hsl(var(--border));
+      }
+      .medcalc-tabs button {
+        background: transparent;
+        border: none;
+        color: hsl(var(--muted));
+        padding: 0.45rem 0.75rem;
+        font-family: inherit;
+        font-size: 0.75rem;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+      }
+      .medcalc-tabs button.active {
+        color: hsl(var(--primary));
+        border-bottom-color: hsl(var(--primary));
+        font-weight: 600;
+      }
+      .medcalc-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.4rem;
+        max-height: 38vh;
+        overflow-y: auto;
+        padding-right: 0.25rem;
+      }
+      @media (min-width: 720px) {
+        .medcalc-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      }
+      .med-preset {
+        text-align: left;
+        background: hsl(var(--bg));
+        border: 1px solid hsl(var(--border));
+        border-radius: 5px;
+        padding: 0.5rem 0.6rem;
+        cursor: pointer;
+        font-family: inherit;
+        color: hsl(var(--fg));
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        transition: border-color 0.15s, background 0.15s;
+      }
+      .med-preset:hover, .med-preset.active {
+        border-color: hsl(var(--primary));
+        background: hsl(var(--primary) / 0.06);
+      }
+      .med-preset .mp-name {
+        font-size: 0.78rem;
+        font-weight: 600;
+      }
+      .med-preset .mp-formula {
+        font-family: "Space Mono", monospace;
+        font-size: 0.65rem;
+        color: hsl(var(--muted));
+      }
+      .med-form {
+        margin-top: 0.75rem;
+        padding: 0.7rem;
+        border: 1px dashed hsl(var(--border));
+        border-radius: 5px;
+        display: none;
+      }
+      .med-form.active { display: block; }
+      .med-form .row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.5rem;
+      }
+      .med-form label {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        font-size: 0.7rem;
+        color: hsl(var(--muted));
+      }
+      .med-form input, .med-form select {
+        margin-top: 0;
+      }
+      .med-form .actions {
+        margin-top: 0.55rem;
+        display: flex;
+        gap: 0.4rem;
+      }
+      .med-form .actions button {
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-fg, 0 0% 100%));
+        border: 1px solid hsl(var(--primary));
+        padding: 0.35rem 0.85rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 0.75rem;
+      }
+      .med-form .actions button.secondary {
+        background: transparent;
+        color: hsl(var(--fg));
+        border-color: hsl(var(--border));
+      }
+      .med-result {
+        margin-top: 0.7rem;
+        padding: 0.7rem;
+        background: hsl(var(--primary) / 0.08);
+        border: 1px solid hsl(var(--primary));
+        border-radius: 5px;
+      }
+      .med-result-head {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: hsl(var(--primary));
+      }
+      .med-result-body {
+        margin-top: 0.2rem;
+        display: flex;
+        align-items: baseline;
+        gap: 0.35rem;
+      }
+      .mr-val {
+        font-family: "Space Mono", monospace;
+        font-size: 1.6rem;
+        font-weight: 700;
+      }
+      .mr-unit { color: hsl(var(--muted)); font-size: 0.85rem; }
+      .mr-explain {
+        display: block;
+        margin-top: 0.35rem;
+        font-size: 0.7rem;
+        color: hsl(var(--muted));
+        line-height: 1.4;
+      }
+
+      /* Patient gating notice */
+      .gate-note {
+        display: none;
+        margin-top: 0.5rem;
+        padding: 0.45rem 0.6rem;
+        background: hsl(var(--danger) / 0.1);
+        border: 1px solid hsl(var(--danger));
+        border-radius: 4px;
+        color: hsl(var(--danger));
+        font-size: 0.75rem;
+      }
+      .gate-note.active { display: block; }
+
+      .calc-display {
+        width: 100%;
+        text-align: right;
+        font-family: "Space Mono", monospace;
+        font-size: 1.4rem;
+        background: hsl(var(--muted));
+        color: hsl(var(--fg));
+        border: 1px solid hsl(var(--border));
+        border-radius: 4px;
+        padding: 0.7rem 0.8rem;
+        margin-bottom: 0.6rem;
+      }
+      .calc-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.4rem;
+      }
+      .calc-grid button {
+        font-family: "Space Mono", monospace;
+        font-size: 1rem;
+        padding: 0.7rem;
+        background: hsl(var(--muted));
+        color: hsl(var(--fg));
+        border: 1px solid hsl(var(--border));
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .calc-grid button:hover { background: hsl(var(--primary) / 0.15); }
+      .calc-grid button.op { color: hsl(var(--primary)); }
+      .calc-grid button.eq { background: hsl(var(--primary)); color: hsl(var(--primary-fg)); }
+      .calc-grid button.wide { grid-column: span 2; }
+
+      /* Converter */
+      .conv-group {
+        margin-bottom: 1rem;
+        padding: 0.7rem;
+        background: hsl(var(--muted) / 0.5);
+        border-radius: 5px;
+      }
+      .conv-group h4 {
+        margin: 0 0 0.5rem;
+        font-family: "Inter", sans-serif;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: hsl(var(--muted-fg));
+      }
+      .conv-row {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 0.5rem;
+        align-items: center;
+        margin-bottom: 0.4rem;
+      }
+      .conv-row .arrow {
+        color: hsl(var(--muted-fg));
+        font-family: "Space Mono", monospace;
+        font-size: 0.85rem;
+      }
+      .conv-row label { display: flex; flex-direction: column; gap: 0.2rem; }
+      .conv-row label span {
+        font-size: 0.6rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: hsl(var(--muted-fg));
+      }
+      .conv-row input {
+        width: 100%;
+        padding: 0.45rem 0.55rem;
+        background: hsl(var(--bg));
+        color: hsl(var(--fg));
+        border: 1px solid hsl(var(--border));
+        border-radius: 4px;
+        font-family: "Space Mono", monospace;
+        font-size: 0.85rem;
+      }
+      .conv-formula {
+        display: block;
+        margin-top: 0.3rem;
+        font-size: 0.6rem;
+        font-family: "Space Mono", monospace;
+        color: hsl(var(--muted-fg));
+      }
+
+      /* Report */
+      .report-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: "Space Mono", monospace;
+        font-size: 0.72rem;
+      }
+      .report-table th, .report-table td {
+        padding: 0.4rem 0.55rem;
+        border: 1px solid hsl(var(--border));
+        text-align: left;
+        vertical-align: top;
+      }
+      .report-table th {
+        background: hsl(var(--muted));
+        font-weight: 600;
+        font-size: 0.6rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: hsl(var(--muted-fg));
+      }
+      .report-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.85rem;
+      }
+
+      .input-error {
+        border-color: hsl(var(--danger)) !important;
+      }
+      .field-hint {
+        display: block;
+        font-size: 0.6rem;
+        font-family: "Space Mono", monospace;
+        margin-top: 0.2rem;
+        color: hsl(var(--muted-fg));
+      }
+      .field-hint.error { color: hsl(var(--danger)); }
+      .field-hint.ok { color: hsl(var(--ok)); }
+
+      .demo-banner {
+        background: hsl(var(--primary) / 0.12);
+        color: hsl(var(--primary));
+        border: 1px dashed hsl(var(--primary));
+        padding: 0.5rem 0.75rem;
+        border-radius: 5px;
+        font-family: "Space Mono", monospace;
+        font-size: 0.7rem;
+        margin-bottom: 0.85rem;
+        display: none;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .demo-banner.active { display: flex; }
+      .demo-banner button {
+        background: transparent;
+        border: 1px solid hsl(var(--primary));
+        color: hsl(var(--primary));
+        padding: 0.2rem 0.6rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 0.65rem;
+      }
+
+      /* Phase timers */
+      .phase-card { padding: 0.85rem 1rem; }
+      .phase-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        align-items: stretch;
+      }
+      .phase-cell {
+        border: 1px solid hsl(var(--border));
+        border-radius: 6px;
+        padding: 0.6rem 0.75rem;
+        background: hsl(var(--bg));
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+      }
+      .phase-cell.active {
+        border-color: hsl(var(--primary));
+        background: hsl(var(--primary) / 0.06);
+      }
+      .phase-cell .phase-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: hsl(var(--muted));
+      }
+      .phase-cell .phase-time {
+        font-family: "Space Mono", monospace;
+        font-size: 1.5rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+      }
+      .phase-cell .phase-range {
+        font-size: 0.7rem;
+        color: hsl(var(--muted));
+      }
+      .phase-cell .phase-actions {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+      }
+      .phase-cell .phase-actions button {
+        flex: 1;
+        background: transparent;
+        border: 1px solid hsl(var(--border));
+        color: hsl(var(--fg));
+        padding: 0.3rem 0.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 0.7rem;
+      }
+      .phase-cell .phase-actions button:hover {
+        border-color: hsl(var(--primary));
+        color: hsl(var(--primary));
+      }
+      .phase-cell .phase-actions button.primary {
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-fg, 0 0% 100%));
+        border-color: hsl(var(--primary));
+      }
+      .phase-cell .phase-actions button.danger {
+        background: hsl(var(--danger));
+        color: #fff;
+        border-color: hsl(var(--danger));
+      }
+      .phase-pill {
+        display: inline-block;
+        padding: 0.15rem 0.5rem;
+        border-radius: 999px;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        background: hsl(var(--muted) / 0.2);
+        color: hsl(var(--muted));
+      }
+      .phase-pill.pre   { background: hsl(var(--ok) / 0.2);    color: hsl(var(--ok)); }
+      .phase-pill.pump  { background: hsl(var(--primary) / 0.2); color: hsl(var(--primary)); }
+      .phase-pill.post  { background: hsl(var(--warn) / 0.2);  color: hsl(var(--warn)); }
+
+      /* Reversal protocol card */
+      .reversal-card {
+        margin-top: 0.85rem;
+        padding: 0.85rem 1rem;
+        border: 1px solid hsl(var(--warn));
+        background: hsl(var(--warn) / 0.06);
+        border-radius: 6px;
+        display: none;
+      }
+      .reversal-card.active { display: block; }
+      .reversal-card h3 {
+        margin: 0 0 0.5rem;
+        font-size: 0.85rem;
+        color: hsl(var(--warn));
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .reversal-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+      .reversal-grid .cell {
+        border: 1px solid hsl(var(--border));
+        border-radius: 5px;
+        padding: 0.45rem 0.55rem;
+        background: hsl(var(--bg));
+      }
+      .reversal-grid .cell .lbl {
+        font-size: 0.62rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: hsl(var(--muted));
+      }
+      .reversal-grid .cell .val {
+        font-family: "Space Mono", monospace;
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin-top: 0.15rem;
+      }
+      .reversal-grid .cell .val .u {
+        font-size: 0.7rem;
+        color: hsl(var(--muted));
+        margin-left: 0.25rem;
+      }
+
+      @media print {
+        body * { visibility: hidden !important; }
+        #report-print, #report-print * { visibility: visible !important; }
+        #report-print {
+          position: absolute;
+          left: 0; top: 0; width: 100%;
+          padding: 1rem;
+        }
+      }
+
       details > summary {
         list-style: none;
         cursor: pointer;
@@ -619,9 +1224,29 @@
           <button class="icon-btn active" data-theme="light" data-i18n="themeLight">Açık</button>
           <button class="icon-btn" data-theme="dark" data-i18n="themeDark">Koyu</button>
           <button class="icon-btn" data-theme="random" data-i18n="themeRandom">Rastgele</button>
+          <span style="opacity: 0.2; padding: 0 0.3rem">|</span>
+          <span class="font-group" title="Yazı boyutu">
+            <button class="font-btn s1" data-font="sm" title="Küçük">a</button>
+            <button class="font-btn s2 active" data-font="md" title="Orta">A</button>
+            <button class="font-btn s3" data-font="lg" title="Büyük">A</button>
+            <button class="font-btn s4" data-font="xl" title="Çok Büyük">A</button>
+          </span>
+          <span style="opacity: 0.2; padding: 0 0.3rem">|</span>
+          <button class="icon-btn" id="btn-calc" data-i18n="calculator" title="Hesap Makinesi">Hesap</button>
+          <button class="icon-btn" id="btn-conv" data-i18n="converter" title="Birim Çevirici">Çevir</button>
+          <button class="icon-btn" id="btn-report" data-i18n="report" title="Rapor">Rapor</button>
+          <button class="icon-btn" id="btn-demo" data-i18n="demo" title="Hızlandırılmış Demo">Demo</button>
         </div>
       </div>
     </header>
+
+    <div id="demoBanner" class="demo-banner">
+      <span>
+        <strong data-i18n="demoActive">DEMO AKTİF</strong>
+        <span data-i18n="demoHint">— örnek vaka hızlandırılmış olarak çalışıyor.</span>
+      </span>
+      <button id="btn-demo-stop" data-i18n="demoStop">Durdur</button>
+    </div>
 
     <div class="layout">
       <!-- LEFT -->
@@ -629,6 +1254,20 @@
         <section class="card">
           <h2 class="serif" data-i18n="patient">Hasta</h2>
           <div class="grid-2">
+            <label>
+              <span class="label" data-i18n="patientId">Hasta ID</span>
+              <input id="f-pid" type="text" maxlength="20" placeholder="HST-001" />
+            </label>
+            <label>
+              <span class="label" data-i18n="tcNo">T.C. Kimlik No</span>
+              <input id="f-tc" type="text" maxlength="11" inputmode="numeric"
+                pattern="[0-9]{11}" placeholder="11 haneli" />
+              <small id="tc-hint" class="field-hint" data-i18n="tcHintEmpty">
+                11 hane, doğrulama Mernis algoritması.
+              </small>
+            </label>
+          </div>
+          <div class="grid-2" style="margin-top: 0.6rem">
             <label>
               <span class="label"
                 ><span data-i18n="age">Yaş</span>
@@ -641,6 +1280,20 @@
               <select id="f-sex">
                 <option value="male" data-i18n="male">Erkek</option>
                 <option value="female" data-i18n="female">Kadın</option>
+              </select>
+            </label>
+            <label>
+              <span class="label" data-i18n="bloodGroup">Kan Grubu</span>
+              <select id="f-blood">
+                <option value="">—</option>
+                <option value="A+">A Rh+</option>
+                <option value="A-">A Rh−</option>
+                <option value="B+">B Rh+</option>
+                <option value="B-">B Rh−</option>
+                <option value="AB+">AB Rh+</option>
+                <option value="AB-">AB Rh−</option>
+                <option value="0+">0 Rh+</option>
+                <option value="0-">0 Rh−</option>
               </select>
             </label>
             <label>
@@ -794,6 +1447,68 @@
 
       <!-- CENTER -->
       <main class="stack">
+        <section class="card phase-card" id="phase-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem">
+            <h2 class="serif" style="margin:0" data-i18n="phasesTitle">Vaka & Pompa</h2>
+            <span id="phase-pill" class="phase-pill" data-i18n="phaseIdle">BEKLEME</span>
+          </div>
+          <div class="phase-grid">
+            <div class="phase-cell" id="cell-case">
+              <div class="phase-head">
+                <span data-i18n="caseTimer">Vaka Saati</span>
+                <span data-i18n="caseTimerHint">ACT 80–190 s</span>
+              </div>
+              <div class="phase-time" id="case-time">00:00</div>
+              <div class="phase-range" id="case-range" data-i18n="caseRangeNote">
+                Vaka başlangıcından itibaren geçen süre.
+              </div>
+              <div class="phase-actions">
+                <button id="btn-case-start" class="primary" data-i18n="btnStartCase">Vaka Başlat</button>
+                <button id="btn-case-reset" data-i18n="btnResetCase">Sıfırla</button>
+              </div>
+              <div id="gate-note" class="gate-note" data-i18n="gateMissing">
+                Vaka başlatılamaz: hasta bilgilerini doldurun (yaş, cinsiyet, boy, kilo, baz ACT).
+              </div>
+            </div>
+            <div class="phase-cell" id="cell-pump">
+              <div class="phase-head">
+                <span data-i18n="pumpTimer">Pompa Saati</span>
+                <span data-i18n="pumpTimerHint">ACT 450–550 s</span>
+              </div>
+              <div class="phase-time" id="pump-time">00:00</div>
+              <div class="phase-range" id="pump-range" data-i18n="pumpRangeNote">
+                Pompa başladığında saat çalışır.
+              </div>
+              <div class="phase-actions">
+                <button id="btn-pump-start" class="primary" data-i18n="btnStartPump">Pompa Başlat</button>
+                <button id="btn-pump-stop" class="danger" data-i18n="btnStopPump" disabled>Pompa Durdur</button>
+              </div>
+            </div>
+          </div>
+          <div id="reversal-card" class="reversal-card">
+            <h3 data-i18n="reversalTitle">Pompa Sonrası — Heparin / Protamin Protokolü</h3>
+            <div class="reversal-grid">
+              <div class="cell">
+                <div class="lbl" data-i18n="reversalActiveHep">Sistemdeki Aktif Heparin</div>
+                <div class="val"><span id="rev-active-iu">—</span><span class="u">IU</span></div>
+              </div>
+              <div class="cell">
+                <div class="lbl" data-i18n="reversalProtSugg">Önerilen Protamin</div>
+                <div class="val"><span id="rev-prot-mg">—</span><span class="u">mg</span></div>
+              </div>
+              <div class="cell">
+                <div class="lbl" data-i18n="reversalTimeToBase">Doğal Bazaline Süre</div>
+                <div class="val"><span id="rev-ttb">—</span><span class="u">dk</span></div>
+              </div>
+            </div>
+            <small class="formula" style="display:block">
+              <span class="eq">Aktif IU = Σ Doz<sub>i</sub>·0.5<sup>(t−t<sub>i</sub>)/90</sup> &nbsp;·&nbsp; Protamin = Aktif IU / 100 (mg)</span>
+              <a class="cite" href="#ref6">[6]</a>
+            </small>
+            <small id="rev-note" class="correction-note" style="display:block;margin-top:0.4rem"></small>
+          </div>
+        </section>
+
         <section class="metrics">
           <div class="metric" id="m-act">
             <div class="label">
@@ -807,16 +1522,38 @@
             <small class="formula" data-i18n="actFormula">
               Hattersley aktive pıhtılaşma süresi (kaolin/celite)
             </small>
+            <div class="predicted-block">
+              <div class="pred-label" data-i18n="predictedAct">Tahmini ACT (heparin yarılanma)</div>
+              <div class="pred-row">
+                <span data-i18n="predIn15">+15 dk</span>
+                <span class="pred-val"><span id="pred-15">—</span> s</span>
+              </div>
+              <div class="pred-row">
+                <span data-i18n="predIn30">+30 dk</span>
+                <span class="pred-val"><span id="pred-30">—</span> s</span>
+              </div>
+              <div class="pred-row">
+                <span data-i18n="predIn60">+60 dk</span>
+                <span class="pred-val"><span id="pred-60">—</span> s</span>
+              </div>
+              <small class="formula" style="margin-top:0.35rem">
+                <span class="eq">ACT(t)=ACT<sub>baz</sub>+(ACT−ACT<sub>baz</sub>)·0.5<sup>t/90</sup></span>
+                <a class="cite" href="#ref6">[6]</a>
+              </small>
+            </div>
+            <small id="act-correction" class="correction-note" style="display:none"></small>
           </div>
           <div class="metric" id="m-hri">
             <div class="label">
               HRI <a class="cite" href="#ref3">[3]</a>
+              <span id="hri-pill" class="hri-pill" style="display:none"></span>
             </div>
             <div><span class="v" id="v-hri">—</span></div>
             <div class="h" data-i18n="mHRIhint">Heparin Yanıt İndeksi</div>
             <small class="formula">
               <span class="eq">HRI = (ACT − ACT<sub>baz</sub>) / (IU/kg)</span>
             </small>
+            <small id="hri-correction" class="correction-note" style="display:none"></small>
           </div>
           <div class="metric" id="m-conc">
             <div class="label">
@@ -830,6 +1567,7 @@
             <small class="formula">
               <span class="eq">[Hep] = Kalıntı IU / TBV (mL)</span>
             </small>
+            <small id="conc-correction" class="correction-note" style="display:none"></small>
           </div>
           <div class="metric" id="m-circ">
             <div class="label">
@@ -1108,6 +1846,235 @@
       </aside>
     </div>
 
+    <!-- ===== MODALS ===== -->
+    <div id="modal-calc" class="modal-backdrop" data-modal>
+      <div class="modal modal-lg medcalc" role="dialog" aria-modal="true">
+        <div class="modal-head">
+          <h3 data-i18n="calculatorTitle">Tıbbi Hesap Makinesi</h3>
+          <button class="modal-close" data-close>×</button>
+        </div>
+
+        <div class="medcalc-tabs">
+          <button data-mtab="presets" class="active" data-i18n="mcTabPresets">Klinik Formüller</button>
+          <button data-mtab="expr" data-i18n="mcTabExpr">İfade / Bilimsel</button>
+        </div>
+
+        <!-- Clinical formulas tab -->
+        <div class="medcalc-pane" data-mpane="presets">
+          <div class="medcalc-grid">
+            <button class="med-preset" data-mc="bsa-mosteller">
+              <span class="mp-name" data-i18n="mcBsaMosteller">ASC (Mosteller)</span>
+              <span class="mp-formula">√(boy·kilo / 3600)</span>
+            </button>
+            <button class="med-preset" data-mc="bsa-dubois">
+              <span class="mp-name" data-i18n="mcBsaDubois">ASC (Du Bois)</span>
+              <span class="mp-formula">0.007184·h^0.725·W^0.425</span>
+            </button>
+            <button class="med-preset" data-mc="bmi">
+              <span class="mp-name" data-i18n="mcBmi">VKİ</span>
+              <span class="mp-formula">kilo / (boy_m)²</span>
+            </button>
+            <button class="med-preset" data-mc="ibw">
+              <span class="mp-name" data-i18n="mcIbw">İdeal Kilo (Devine)</span>
+              <span class="mp-formula">♂ 50 + 2.3·(in−60) · ♀ 45.5 + 2.3·(in−60)</span>
+            </button>
+            <button class="med-preset" data-mc="lbw">
+              <span class="mp-name" data-i18n="mcLbw">Yağsız Vücut (Janmahasatian)</span>
+              <span class="mp-formula">9270·W / (6680/♂ ya da 8780/♀ + 244·BMI)</span>
+            </button>
+            <button class="med-preset" data-mc="bv-nadler">
+              <span class="mp-name" data-i18n="mcBvNadler">Total Kan Hacmi (Nadler)</span>
+              <span class="mp-formula">♂ 0.3669·h³+0.03219·W+0.6041 (L)</span>
+            </button>
+            <button class="med-preset" data-mc="egfr-cg">
+              <span class="mp-name" data-i18n="mcEgfrCg">eGFR (Cockcroft-Gault)</span>
+              <span class="mp-formula">((140−yaş)·W) / (72·SCr)</span>
+            </button>
+            <button class="med-preset" data-mc="hep-load">
+              <span class="mp-name" data-i18n="mcHepLoad">Heparin Yüklemesi</span>
+              <span class="mp-formula">300–400 IU/kg</span>
+            </button>
+            <button class="med-preset" data-mc="hep-resist">
+              <span class="mp-name" data-i18n="mcHepResist">Heparin Direnci Ek Doz</span>
+              <span class="mp-formula">((Hedef−ACT)/HRI)·W</span>
+            </button>
+            <button class="med-preset" data-mc="protamine">
+              <span class="mp-name" data-i18n="mcProt">Protamin Geri Çevirme</span>
+              <span class="mp-formula">Aktif IU / 100 (mg)</span>
+            </button>
+            <button class="med-preset" data-mc="prot-ratio">
+              <span class="mp-name" data-i18n="mcProtRatio">Protamin Oran (yükleme)</span>
+              <span class="mp-formula">1 mg / 100 IU başlangıç heparin</span>
+            </button>
+            <button class="med-preset" data-mc="drip">
+              <span class="mp-name" data-i18n="mcDrip">İnfüzyon Hızı</span>
+              <span class="mp-formula">mL/sa = (mcg·kg·min⁻¹·W·60) / konsantrasyon</span>
+            </button>
+            <button class="med-preset" data-mc="maint">
+              <span class="mp-name" data-i18n="mcMaint">İdame Sıvı (4-2-1)</span>
+              <span class="mp-formula">4·ilk10 + 2·sonra10 + 1·kalan</span>
+            </button>
+            <button class="med-preset" data-mc="map">
+              <span class="mp-name" data-i18n="mcMap">Ortalama Arter Basıncı</span>
+              <span class="mp-formula">(SBP + 2·DBP) / 3</span>
+            </button>
+            <button class="med-preset" data-mc="qtc">
+              <span class="mp-name" data-i18n="mcQtc">Düzeltilmiş QT (Bazett)</span>
+              <span class="mp-formula">QT / √RR</span>
+            </button>
+            <button class="med-preset" data-mc="anion">
+              <span class="mp-name" data-i18n="mcAnion">Anyon Açığı</span>
+              <span class="mp-formula">Na − (Cl + HCO₃)</span>
+            </button>
+          </div>
+
+          <div class="med-form" id="med-form"></div>
+          <div class="med-result" id="med-result">
+            <div class="med-result-head" data-i18n="mcResult">Sonuç</div>
+            <div class="med-result-body">
+              <span class="mr-val" id="mr-val">—</span>
+              <span class="mr-unit" id="mr-unit"></span>
+            </div>
+            <small class="mr-explain" id="mr-explain"></small>
+          </div>
+        </div>
+
+        <!-- Scientific expression tab -->
+        <div class="medcalc-pane" data-mpane="expr" style="display:none">
+          <input id="calcDisplay" class="calc-display" value="0" />
+          <small class="mr-explain" data-i18n="mcExprHint">
+            sin, cos, tan, log, ln, sqrt, exp, abs, π, e desteklenir. Örn: sqrt(178^2 + 82^2)
+          </small>
+          <div class="calc-grid">
+            <button data-calc="C">C</button>
+            <button data-calc="(">(</button>
+            <button data-calc=")">)</button>
+            <button class="op" data-calc="/">÷</button>
+            <button class="op" data-calc="sqrt(">√</button>
+            <button data-calc="7">7</button>
+            <button data-calc="8">8</button>
+            <button data-calc="9">9</button>
+            <button class="op" data-calc="*">×</button>
+            <button class="op" data-calc="^">x^y</button>
+            <button data-calc="4">4</button>
+            <button data-calc="5">5</button>
+            <button data-calc="6">6</button>
+            <button class="op" data-calc="-">−</button>
+            <button class="op" data-calc="ln(">ln</button>
+            <button data-calc="1">1</button>
+            <button data-calc="2">2</button>
+            <button data-calc="3">3</button>
+            <button class="op" data-calc="+">+</button>
+            <button class="op" data-calc="log(">log</button>
+            <button class="wide" data-calc="0">0</button>
+            <button data-calc=".">.</button>
+            <button class="op" data-calc="π">π</button>
+            <button class="eq" data-calc="=">=</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-conv" class="modal-backdrop" data-modal>
+      <div class="modal modal-lg" role="dialog" aria-modal="true">
+        <div class="modal-head">
+          <h3 data-i18n="converter">Birim Çevirici</h3>
+          <button class="modal-close" data-close>×</button>
+        </div>
+
+        <div class="conv-group">
+          <h4 data-i18n="convVolume">Hacim</h4>
+          <div class="conv-row">
+            <label>
+              <span>mL</span>
+              <input id="cv-ml" type="number" step="any" data-conv="vol" data-unit="ml" />
+            </label>
+            <span class="arrow">↔</span>
+            <label>
+              <span>L</span>
+              <input id="cv-l" type="number" step="any" data-conv="vol" data-unit="l" />
+            </label>
+          </div>
+          <div class="conv-row">
+            <label>
+              <span>L</span>
+              <input id="cv-l2" type="number" step="any" data-conv="vol" data-unit="l" />
+            </label>
+            <span class="arrow">↔</span>
+            <label>
+              <span>kL (m³)</span>
+              <input id="cv-kl" type="number" step="any" data-conv="vol" data-unit="kl" />
+            </label>
+          </div>
+          <small class="conv-formula">1 L = 1000 mL · 1 kL = 1000 L</small>
+        </div>
+
+        <div class="conv-group">
+          <h4 data-i18n="convHeparin">Heparin (kütle ↔ aktivite)</h4>
+          <div class="conv-row">
+            <label>
+              <span>mg</span>
+              <input id="cv-mg" type="number" step="any" data-conv="hep" data-unit="mg" />
+            </label>
+            <span class="arrow">↔</span>
+            <label>
+              <span>IU</span>
+              <input id="cv-iu" type="number" step="any" data-conv="hep" data-unit="iu" />
+            </label>
+          </div>
+          <small class="conv-formula" data-i18n="convHeparinFormula">
+            Tipik aktivite ≈ 100 IU/mg (sodyum heparin enjeksiyonluk)
+          </small>
+        </div>
+
+        <div class="conv-group">
+          <h4 data-i18n="convConc">Heparin Konsantrasyonu</h4>
+          <div class="conv-row">
+            <label>
+              <span>IU / mL</span>
+              <input id="cv-iuml" type="number" step="any" data-conv="conc" data-unit="iuml" />
+            </label>
+            <span class="arrow">↔</span>
+            <label>
+              <span>mg / mL</span>
+              <input id="cv-mgml" type="number" step="any" data-conv="conc" data-unit="mgml" />
+            </label>
+          </div>
+          <small class="conv-formula">1 mg/mL ≈ 100 IU/mL</small>
+        </div>
+
+        <div class="conv-group">
+          <h4 data-i18n="convProtamine">Protamin Doz</h4>
+          <div class="conv-row">
+            <label>
+              <span data-i18n="convResIu">Kalıntı Heparin (IU)</span>
+              <input id="cv-prot-iu" type="number" step="any" data-conv="prot" data-unit="iu" />
+            </label>
+            <span class="arrow">→</span>
+            <label>
+              <span>mg</span>
+              <input id="cv-prot-mg" type="number" step="any" data-conv="prot" data-unit="mg" />
+            </label>
+          </div>
+          <small class="conv-formula">Protamin (mg) = Kalıntı IU ÷ 100  ·  [Bull 1975]</small>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-report" class="modal-backdrop" data-modal>
+      <div id="report-print" class="modal modal-lg" role="dialog" aria-modal="true">
+        <div class="modal-head">
+          <h3 data-i18n="reportTitle">Vaka Raporu</h3>
+          <button class="modal-close" data-close>×</button>
+        </div>
+        <div id="reportBody"></div>
+        <div class="report-actions">
+          <button class="btn" id="btn-print" data-i18n="reportPrint">Yazdır / PDF</button>
+          <button class="btn" id="btn-csv" data-i18n="reportCsv">CSV indir</button>
+        </div>
+      </div>
+    </div>
+
     <script>
       // ---------- i18n ----------
       const I18N = {
@@ -1212,6 +2179,125 @@
             "TBV♂ = 0.3669·h³ + 0.03219·W + 0.6041 (L)",
           bvFormulaF:
             "TBV♀ = 0.3561·h³ + 0.03308·W + 0.1833 (L)",
+          patientId: "Hasta ID",
+          tcNo: "T.C. Kimlik No",
+          tcHintEmpty: "11 hane, doğrulama Mernis algoritması.",
+          tcHintShort: "Eksik: {n}/11 hane.",
+          tcHintInvalid: "Geçersiz T.C. Kimlik No.",
+          tcHintOk: "T.C. Kimlik No doğrulandı.",
+          bloodGroup: "Kan Grubu",
+          calculator: "Hesap",
+          converter: "Çevir",
+          report: "Rapor",
+          demo: "Demo",
+          demoActive: "DEMO AKTİF",
+          demoHint: "— örnek vaka hızlandırılmış olarak çalışıyor.",
+          demoStop: "Durdur",
+          predictedAct: "Tahmini ACT (heparin yarılanması)",
+          predIn15: "+15 dk",
+          predIn30: "+30 dk",
+          predIn60: "+60 dk",
+          hriLowLabel: "Düşük yanıt",
+          hriHighLabel: "Yüksek yanıt",
+          corrActLow:
+            "Düzeltme önerisi: {d} IU ek heparin verilmesi uygundur.",
+          corrActHigh:
+            "Düzeltme: heparin infüzyonunu durdurun, ACT yeniden ölçün.",
+          corrHriLow:
+            "Düşük yanıt — heparin direnci ihtimali; AT-III, FFP veya ek doz değerlendirin.",
+          corrHriHigh:
+            "Yüksek yanıt — sonraki bolusu azaltın, kanama riski artmıştır.",
+          corrConcLow:
+            "Konsantrasyon hedef altında ({t} IU/mL) — ek bolus verilmesi gerekebilir.",
+          convVolume: "Hacim",
+          convHeparin: "Heparin (kütle ↔ aktivite)",
+          convHeparinFormula:
+            "Tipik aktivite ≈ 100 IU/mg (sodyum heparin enjeksiyonluk)",
+          convConc: "Heparin Konsantrasyonu",
+          convProtamine: "Protamin Doz",
+          convResIu: "Kalıntı Heparin (IU)",
+          reportTitle: "Vaka Raporu",
+          reportPrint: "Yazdır / PDF",
+          reportCsv: "CSV indir",
+          rPatientId: "Hasta ID",
+          rTc: "T.C.",
+          rBlood: "Kan Grubu",
+          rAge: "Yaş",
+          rSex: "Cinsiyet",
+          rHW: "Boy / Kilo",
+          rBsa: "VYA",
+          rTbv: "Kan Hacmi",
+          rBaseline: "Bazal ACT",
+          rTargetAct: "Hedef ACT",
+          rLog: "Vaka Zaman Çizelgesi",
+          rTime: "Zaman",
+          rCumHep: "Kümülatif Heparin",
+          rConc: "[Heparin]",
+          rNote: "Not",
+          rBaselineMark: "Bazal",
+          rDose: "Doz",
+          rGenerated: "Oluşturuldu",
+          phasesTitle: "Vaka & Pompa",
+          caseTimer: "Vaka Saati",
+          caseTimerHint: "ACT 80–190 s",
+          caseRangeNote: "Vaka başlangıcından itibaren geçen süre.",
+          pumpTimer: "Pompa Saati",
+          pumpTimerHint: "ACT 450–550 s",
+          pumpRangeNote: "Pompa başladığında saat çalışır.",
+          btnStartCase: "Vaka Başlat",
+          btnCaseRunning: "Vaka Aktif",
+          btnResetCase: "Sıfırla",
+          btnStartPump: "Pompa Başlat",
+          btnStopPump: "Pompa Durdur",
+          phaseIdle: "BEKLEME",
+          phasePre: "VAKA ÖNCESİ",
+          phasePump: "POMPA",
+          phasePost: "POMPA SONRASI",
+          corrPreActLow:
+            "Vaka öncesi ACT hedef altında ({low}–{high} s). {d} IU heparin bolusu uygulanabilir.",
+          corrPreActHigh:
+            "Vaka öncesi ACT yüksek (>{high} s). Mevcut antikoagülan etkisi değerlendirin.",
+          corrPumpActLow:
+            "Pompa fazında ACT düşük ({low}–{high} s hedef). {d} IU ek heparin önerilir; AT-III/FFP düşünülebilir.",
+          corrPumpActHigh:
+            "Pompa fazında ACT yüksek (>{high} s). Heparin infüzyonunu yavaşlatın, ACT'yi tekrarlayın.",
+          corrPostActLow:
+            "Pompa sonrası ACT düşük ({low}–{high} s). Protamin dozunu yeniden gözden geçirin.",
+          corrPostActHigh:
+            "Pompa sonrası ACT yüksek (>{high} s). Sistemde aktif heparin var — protamin geri-çevirme önerilir.",
+          reversalTitle: "Pompa Sonrası — Heparin / Protamin Protokolü",
+          reversalActiveHep: "Sistemdeki Aktif Heparin",
+          reversalProtSugg: "Önerilen Protamin",
+          reversalTimeToBase: "Doğal Bazaline Süre",
+          reversalNoteGive:
+            "Sistemde ~{iu} IU aktif heparin var; geri-çevirme için ~{mg} mg protamin (1 mg / 100 IU) önerilir. Yarılanma ile kademeli azalan etki dinamik ACT tahmininde sürmektedir.",
+          reversalNoteClear:
+            "Aktif heparin etkisi minimal — protamin çoğunlukla gerekli değildir; ACT bazaline yakın seyrediyor.",
+          gateMissing:
+            "Vaka başlatılamaz: hasta bilgilerini doldurun (yaş, cinsiyet, boy, kilo, baz ACT). T.C. Kimlik No isteğe bağlı; geçersizse uyarı verilir ama vakayı durdurmaz.",
+          calculatorTitle: "Tıbbi Hesap Makinesi",
+          mcTabPresets: "Klinik Formüller",
+          mcTabExpr: "İfade / Bilimsel",
+          mcResult: "Sonuç",
+          mcCalculate: "Hesapla",
+          mcToExpr: "İfadeye Gönder",
+          mcExprHint: "sin, cos, tan, log, ln, sqrt, exp, abs, π, e desteklenir. Örn: sqrt(178^2 + 82^2)",
+          mcBsaMosteller: "ASC (Mosteller)",
+          mcBsaDubois: "ASC (Du Bois)",
+          mcBmi: "VKİ (Vücut Kitle İndeksi)",
+          mcIbw: "İdeal Kilo (Devine)",
+          mcLbw: "Yağsız Vücut (Janmahasatian)",
+          mcBvNadler: "Total Kan Hacmi (Nadler)",
+          mcEgfrCg: "eGFR (Cockcroft-Gault)",
+          mcHepLoad: "Heparin Yüklemesi",
+          mcHepResist: "Heparin Direnci Ek Doz",
+          mcProt: "Protamin Geri Çevirme",
+          mcProtRatio: "Protamin Oranı (Yükleme)",
+          mcDrip: "İnfüzyon Hızı",
+          mcMaint: "İdame Sıvı (4-2-1)",
+          mcMap: "Ortalama Arter Basıncı",
+          mcQtc: "Düzeltilmiş QT (Bazett)",
+          mcAnion: "Anyon Açığı",
         },
         en: {
           subtitle: "Clinical Console",
@@ -1311,6 +2397,123 @@
           rangeProtRatio: "Protamine ratio",
           bvFormulaM: "TBV♂ = 0.3669·h³ + 0.03219·W + 0.6041 (L)",
           bvFormulaF: "TBV♀ = 0.3561·h³ + 0.03308·W + 0.1833 (L)",
+          patientId: "Patient ID",
+          tcNo: "Nat. ID",
+          tcHintEmpty: "11 digits, validated by Mernis algorithm.",
+          tcHintShort: "Incomplete: {n}/11 digits.",
+          tcHintInvalid: "Invalid national ID.",
+          tcHintOk: "National ID verified.",
+          bloodGroup: "Blood Group",
+          calculator: "Calc",
+          converter: "Convert",
+          report: "Report",
+          demo: "Demo",
+          demoActive: "DEMO ACTIVE",
+          demoHint: "— sample case running at accelerated speed.",
+          demoStop: "Stop",
+          predictedAct: "Predicted ACT (heparin half-life)",
+          predIn15: "+15 min",
+          predIn30: "+30 min",
+          predIn60: "+60 min",
+          hriLowLabel: "Low response",
+          hriHighLabel: "High response",
+          corrActLow: "Suggested correction: give {d} IU additional heparin.",
+          corrActHigh: "Correction: stop heparin infusion, recheck ACT.",
+          corrHriLow:
+            "Low response — possible heparin resistance; consider AT-III, FFP, or extra dose.",
+          corrHriHigh:
+            "High response — reduce next bolus; bleeding risk increased.",
+          corrConcLow:
+            "Concentration below target ({t} IU/mL) — additional bolus may be needed.",
+          convVolume: "Volume",
+          convHeparin: "Heparin (mass ↔ activity)",
+          convHeparinFormula:
+            "Typical activity ≈ 100 IU/mg (sodium heparin for injection)",
+          convConc: "Heparin Concentration",
+          convProtamine: "Protamine Dose",
+          convResIu: "Residual Heparin (IU)",
+          reportTitle: "Case Report",
+          reportPrint: "Print / PDF",
+          reportCsv: "Download CSV",
+          rPatientId: "Patient ID",
+          rTc: "Nat. ID",
+          rBlood: "Blood",
+          rAge: "Age",
+          rSex: "Sex",
+          rHW: "Height / Weight",
+          rBsa: "BSA",
+          rTbv: "Blood Volume",
+          rBaseline: "Baseline ACT",
+          rTargetAct: "Target ACT",
+          rLog: "Case Timeline",
+          rTime: "Time",
+          rCumHep: "Cumulative Heparin",
+          rConc: "[Heparin]",
+          rNote: "Note",
+          rBaselineMark: "Baseline",
+          rDose: "Dose",
+          rGenerated: "Generated",
+          phasesTitle: "Case & Pump",
+          caseTimer: "Case Clock",
+          caseTimerHint: "ACT 80–190 s",
+          caseRangeNote: "Time elapsed since case started.",
+          pumpTimer: "Pump Clock",
+          pumpTimerHint: "ACT 450–550 s",
+          pumpRangeNote: "Starts when CPB pump is engaged.",
+          btnStartCase: "Start Case",
+          btnCaseRunning: "Case Running",
+          btnResetCase: "Reset",
+          btnStartPump: "Start Pump",
+          btnStopPump: "Stop Pump",
+          phaseIdle: "IDLE",
+          phasePre: "PRE-PUMP",
+          phasePump: "ON PUMP",
+          phasePost: "POST-PUMP",
+          corrPreActLow:
+            "Pre-pump ACT below target ({low}–{high} s). A {d} IU heparin bolus may be considered.",
+          corrPreActHigh:
+            "Pre-pump ACT high (>{high} s). Assess pre-existing anticoagulant effect.",
+          corrPumpActLow:
+            "On-pump ACT low (target {low}–{high} s). Suggest {d} IU additional heparin; consider AT-III / FFP if resistant.",
+          corrPumpActHigh:
+            "On-pump ACT high (>{high} s). Slow the heparin infusion and recheck ACT.",
+          corrPostActLow:
+            "Post-pump ACT low ({low}–{high} s). Re-evaluate the protamine dose.",
+          corrPostActHigh:
+            "Post-pump ACT high (>{high} s). Active heparin still circulating — protamine reversal recommended.",
+          reversalTitle: "Post-Pump — Heparin / Protamine Protocol",
+          reversalActiveHep: "Active Heparin in System",
+          reversalProtSugg: "Suggested Protamine",
+          reversalTimeToBase: "Natural Time to Baseline",
+          reversalNoteGive:
+            "~{iu} IU of active heparin estimated in circulation; ~{mg} mg protamine (1 mg per 100 IU) suggested for reversal. Dynamic ACT prediction continues with half-life decay.",
+          reversalNoteClear:
+            "Active heparin effect minimal — protamine often unnecessary; ACT trending near baseline.",
+          gateMissing:
+            "Cannot start case: please fill the patient details (age, sex, height, weight, baseline ACT). National ID is optional; if invalid it is flagged but does not block the case.",
+          calculatorTitle: "Medical Calculator",
+          mcTabPresets: "Clinical Formulas",
+          mcTabExpr: "Expression / Scientific",
+          mcResult: "Result",
+          mcCalculate: "Calculate",
+          mcToExpr: "Send to Expression",
+          mcExprHint: "Supports sin, cos, tan, log, ln, sqrt, exp, abs, π, e. Ex: sqrt(178^2 + 82^2)",
+          mcBsaMosteller: "BSA (Mosteller)",
+          mcBsaDubois: "BSA (Du Bois)",
+          mcBmi: "BMI (Body Mass Index)",
+          mcIbw: "Ideal Body Weight (Devine)",
+          mcLbw: "Lean Body Weight (Janmahasatian)",
+          mcBvNadler: "Total Blood Volume (Nadler)",
+          mcEgfrCg: "eGFR (Cockcroft-Gault)",
+          mcHepLoad: "Heparin Loading",
+          mcHepResist: "Heparin Resistance Top-up",
+          mcProt: "Protamine Reversal",
+          mcProtRatio: "Protamine Ratio (Loading)",
+          mcDrip: "Infusion Rate",
+          mcMaint: "Maintenance Fluids (4-2-1)",
+          mcMap: "Mean Arterial Pressure",
+          mcQtc: "Corrected QT (Bazett)",
+          mcAnion: "Anion Gap",
         },
         es: {
           subtitle: "Consola Clínica",
@@ -1411,6 +2614,125 @@
           rangeProtRatio: "Relación protamina",
           bvFormulaM: "TBV♂ = 0.3669·h³ + 0.03219·W + 0.6041 (L)",
           bvFormulaF: "TBV♀ = 0.3561·h³ + 0.03308·W + 0.1833 (L)",
+          patientId: "ID Paciente",
+          tcNo: "DNI Nac.",
+          tcHintEmpty: "11 dígitos, validado por algoritmo Mernis.",
+          tcHintShort: "Incompleto: {n}/11 dígitos.",
+          tcHintInvalid: "DNI nacional no válido.",
+          tcHintOk: "DNI nacional verificado.",
+          bloodGroup: "Grupo Sanguíneo",
+          calculator: "Calc",
+          converter: "Convertir",
+          report: "Informe",
+          demo: "Demo",
+          demoActive: "DEMO ACTIVO",
+          demoHint: "— caso de ejemplo en velocidad acelerada.",
+          demoStop: "Detener",
+          predictedAct: "ACT predicho (vida media de heparina)",
+          predIn15: "+15 min",
+          predIn30: "+30 min",
+          predIn60: "+60 min",
+          hriLowLabel: "Respuesta baja",
+          hriHighLabel: "Respuesta alta",
+          corrActLow:
+            "Corrección sugerida: administrar {d} IU de heparina adicional.",
+          corrActHigh:
+            "Corrección: detener infusión de heparina y reevaluar ACT.",
+          corrHriLow:
+            "Respuesta baja — posible resistencia a heparina; considerar AT-III, FFP o dosis extra.",
+          corrHriHigh:
+            "Respuesta alta — reducir el siguiente bolo; mayor riesgo de sangrado.",
+          corrConcLow:
+            "Concentración bajo objetivo ({t} IU/mL) — puede requerir bolo adicional.",
+          convVolume: "Volumen",
+          convHeparin: "Heparina (masa ↔ actividad)",
+          convHeparinFormula:
+            "Actividad típica ≈ 100 IU/mg (heparina sódica inyectable)",
+          convConc: "Concentración de Heparina",
+          convProtamine: "Dosis de Protamina",
+          convResIu: "Heparina Residual (IU)",
+          reportTitle: "Informe del Caso",
+          reportPrint: "Imprimir / PDF",
+          reportCsv: "Descargar CSV",
+          rPatientId: "ID Paciente",
+          rTc: "DNI",
+          rBlood: "Grupo",
+          rAge: "Edad",
+          rSex: "Sexo",
+          rHW: "Talla / Peso",
+          rBsa: "ASC",
+          rTbv: "Volumen Sanguíneo",
+          rBaseline: "ACT basal",
+          rTargetAct: "ACT objetivo",
+          rLog: "Cronología del Caso",
+          rTime: "Tiempo",
+          rCumHep: "Heparina Acumulada",
+          rConc: "[Heparina]",
+          rNote: "Nota",
+          rBaselineMark: "Basal",
+          rDose: "Dosis",
+          rGenerated: "Generado",
+          phasesTitle: "Caso & Bomba",
+          caseTimer: "Reloj de Caso",
+          caseTimerHint: "ACT 80–190 s",
+          caseRangeNote: "Tiempo transcurrido desde el inicio del caso.",
+          pumpTimer: "Reloj de Bomba",
+          pumpTimerHint: "ACT 450–550 s",
+          pumpRangeNote: "Inicia al activar la bomba CEC.",
+          btnStartCase: "Iniciar Caso",
+          btnCaseRunning: "Caso Activo",
+          btnResetCase: "Reiniciar",
+          btnStartPump: "Iniciar Bomba",
+          btnStopPump: "Detener Bomba",
+          phaseIdle: "INACTIVO",
+          phasePre: "PRE-BOMBA",
+          phasePump: "EN BOMBA",
+          phasePost: "POST-BOMBA",
+          corrPreActLow:
+            "ACT pre-bomba bajo objetivo ({low}–{high} s). Considerar bolo de heparina de {d} IU.",
+          corrPreActHigh:
+            "ACT pre-bomba alto (>{high} s). Evaluar efecto anticoagulante previo.",
+          corrPumpActLow:
+            "ACT en bomba bajo (objetivo {low}–{high} s). Sugerir {d} IU de heparina adicional; considerar AT-III / PFC si resistente.",
+          corrPumpActHigh:
+            "ACT en bomba alto (>{high} s). Reducir infusión de heparina y repetir ACT.",
+          corrPostActLow:
+            "ACT post-bomba bajo ({low}–{high} s). Reevaluar la dosis de protamina.",
+          corrPostActHigh:
+            "ACT post-bomba alto (>{high} s). Heparina aún circulando — se recomienda reversión con protamina.",
+          reversalTitle: "Post-Bomba — Protocolo Heparina / Protamina",
+          reversalActiveHep: "Heparina Activa en Sistema",
+          reversalProtSugg: "Protamina Sugerida",
+          reversalTimeToBase: "Tiempo Natural al Basal",
+          reversalNoteGive:
+            "~{iu} IU de heparina activa estimada en circulación; ~{mg} mg de protamina (1 mg por 100 IU) sugerido para reversión. La predicción dinámica de ACT continúa con la decaída por vida media.",
+          reversalNoteClear:
+            "Efecto de heparina activa mínimo — protamina a menudo innecesaria; ACT cerca del basal.",
+          gateMissing:
+            "No se puede iniciar el caso: complete los datos del paciente (edad, sexo, talla, peso, ACT basal). El DNI nacional es opcional; si es inválido se marca pero no bloquea.",
+          calculatorTitle: "Calculadora Médica",
+          mcTabPresets: "Fórmulas Clínicas",
+          mcTabExpr: "Expresión / Científica",
+          mcResult: "Resultado",
+          mcCalculate: "Calcular",
+          mcToExpr: "Enviar a Expresión",
+          mcExprHint: "Soporta sin, cos, tan, log, ln, sqrt, exp, abs, π, e. Ej: sqrt(178^2 + 82^2)",
+          mcBsaMosteller: "ASC (Mosteller)",
+          mcBsaDubois: "ASC (Du Bois)",
+          mcBmi: "IMC (Índice de Masa Corporal)",
+          mcIbw: "Peso Ideal (Devine)",
+          mcLbw: "Masa Magra (Janmahasatian)",
+          mcBvNadler: "Volumen Sanguíneo Total (Nadler)",
+          mcEgfrCg: "eGFR (Cockcroft-Gault)",
+          mcHepLoad: "Carga de Heparina",
+          mcHepResist: "Refuerzo por Resistencia",
+          mcProt: "Reversión con Protamina",
+          mcProtRatio: "Proporción Protamina (Carga)",
+          mcDrip: "Velocidad de Infusión",
+          mcMaint: "Líquidos de Mantenimiento (4-2-1)",
+          mcMap: "Presión Arterial Media",
+          mcQtc: "QT Corregido (Bazett)",
+          mcAnion: "Brecha Aniónica",
         },
       };
 
@@ -1428,6 +2750,7 @@
           const k = el.getAttribute("data-i18n");
           el.textContent = t(k);
         });
+        if (typeof updateTcHint === "function") updateTcHint();
         render();
       };
 
@@ -1467,7 +2790,15 @@
 
       // ---------- State ----------
       const state = {
-        patient: { age: 64, sex: "male", heightCm: 178, weightKg: 82 },
+        patient: {
+          id: "",
+          tc: "",
+          blood: "",
+          age: 64,
+          sex: "male",
+          heightCm: 178,
+          weightKg: 82,
+        },
         baseline: 125,
         tNow: 15,
         targets: {
@@ -1481,6 +2812,54 @@
         measurements: [{ t: 0, act: 125, cum: 0 }],
         newAct: 540,
         newDose: 0,
+        phase: {
+          caseStartedAt: null,
+          pumpStartedAt: null,
+          pumpStoppedAt: null,
+        },
+        phaseRanges: {
+          pre:  { low: 80,  high: 190, target: 120 },
+          pump: { low: 450, high: 550, target: 480 },
+          post: { low: 80,  high: 190, target: 120 },
+        },
+      };
+
+      // ---------- Phase helpers ----------
+      const getPhase = () => {
+        const ph = state.phase;
+        if (ph.pumpStartedAt && !ph.pumpStoppedAt) return "pump";
+        if (ph.pumpStoppedAt) return "post";
+        if (ph.caseStartedAt) return "pre";
+        return "idle";
+      };
+      const getPhaseRange = () => {
+        const p = getPhase();
+        if (p === "idle") return null;
+        return { ...state.phaseRanges[p], phase: p };
+      };
+      const fmtClock = (ms) => {
+        if (ms == null || ms < 0) return "00:00";
+        const s = Math.floor(ms / 1000);
+        const h = Math.floor(s / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        const sec = s % 60;
+        const pad = (n) => String(n).padStart(2, "0");
+        return h > 0 ? `${pad(h)}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
+      };
+      // Active circulating heparin from incremental doses with half-life decay
+      const activeHeparinAt = (tMin, halfLife = 90) => {
+        const ms = state.measurements;
+        let active = 0;
+        let prevCum = 0;
+        for (const m of ms) {
+          if (m.t > tMin) break;
+          const dose = Math.max(0, m.cum - prevCum);
+          if (dose > 0) {
+            active += dose * Math.pow(0.5, (tMin - m.t) / halfLife);
+          }
+          prevCum = m.cum;
+        }
+        return active;
       };
 
       // ---------- Form bindings ----------
@@ -1498,6 +2877,9 @@
       };
 
       function syncForm() {
+        $("f-pid").value = state.patient.id || "";
+        $("f-tc").value = state.patient.tc || "";
+        $("f-blood").value = state.patient.blood || "";
         $("f-age").value = state.patient.age;
         $("f-sex").value = state.patient.sex;
         $("f-height").value = state.patient.heightCm;
@@ -1515,6 +2897,18 @@
       }
 
       function attachInputs() {
+        $("f-pid").addEventListener("input", (e) => {
+          state.patient.id = e.target.value.trim();
+        });
+        $("f-tc").addEventListener("input", (e) => {
+          const v = e.target.value.replace(/\D/g, "").slice(0, 11);
+          e.target.value = v;
+          state.patient.tc = v;
+          updateTcHint();
+        });
+        $("f-blood").addEventListener("change", (e) => {
+          state.patient.blood = e.target.value;
+        });
         bindNumber(
           "f-age",
           () => state.patient.age,
@@ -1781,12 +3175,19 @@
           el.classList.remove("s-ok", "s-warn", "s-danger");
           el.classList.add("s-" + sev);
         };
+
+        // Phase-aware effective ACT range (auto when a phase is active)
+        const phaseRange = getPhaseRange();
+        const effLow  = phaseRange ? phaseRange.low  : state.targets.actLow;
+        const effHigh = phaseRange ? phaseRange.high : state.targets.actHigh;
+        const effTgt  = phaseRange ? phaseRange.target : state.targets.targetAct;
+
         const actSev =
-          actVal < state.targets.actLow
+          actVal < effLow
             ? "danger"
-            : actVal < state.targets.targetAct
+            : actVal < effTgt
               ? "warn"
-              : actVal > state.targets.actHigh
+              : actVal > effHigh
                 ? "warn"
                 : "ok";
         setSev($("m-act"), actSev);
@@ -1801,6 +3202,80 @@
           conc < state.targets.targetHep * 0.7 ? "warn" : "ok",
         );
         setSev($("m-circ"), "ok");
+
+        // Out-of-range flash + correction notes
+        const setFlash = (el, on) => el.classList.toggle("flash-border", on);
+        const setVFlash = (el, on) => el.classList.toggle("flash-red", on);
+        const showCorr = (id, msg) => {
+          const el = $(id);
+          if (msg) { el.style.display = "block"; el.textContent = msg; }
+          else { el.style.display = "none"; el.textContent = ""; }
+        };
+        const actOut =
+          actVal < effLow || actVal > effHigh;
+        const hriOut =
+          hri < state.targets.hriLow || hri > state.targets.hriHigh;
+        const concOut = conc < state.targets.targetHep * 0.7;
+        setFlash($("m-act"), actOut);
+        setVFlash($("v-act"), actOut);
+        setFlash($("m-hri"), hriOut);
+        setVFlash($("v-hri"), hriOut);
+        setFlash($("m-conc"), concOut);
+        setVFlash($("v-conc"), concOut);
+
+        // ACT correction suggestion (phase-aware)
+        const phaseId = phaseRange ? phaseRange.phase : null;
+        if (actVal < effLow) {
+          const deficit = effTgt - actVal;
+          const ratio = hri > 0 ? hri : 1;
+          const sugg = Math.round((deficit / ratio) * p.weightKg / 100) * 100;
+          const key =
+            phaseId === "pump" ? "corrPumpActLow" :
+            phaseId === "pre"  ? "corrPreActLow"  :
+            phaseId === "post" ? "corrPostActLow" : "corrActLow";
+          showCorr("act-correction",
+            t(key, { d: Math.max(0, sugg).toLocaleString(), low: effLow, high: effHigh }));
+        } else if (actVal > effHigh) {
+          const key =
+            phaseId === "pump" ? "corrPumpActHigh" :
+            phaseId === "pre"  ? "corrPreActHigh"  :
+            phaseId === "post" ? "corrPostActHigh" : "corrActHigh";
+          showCorr("act-correction", t(key, { low: effLow, high: effHigh }));
+        } else { showCorr("act-correction", ""); }
+
+        // HRI pill + correction
+        const hriPill = $("hri-pill");
+        hriPill.classList.remove("low", "high");
+        if (hri < state.targets.hriLow) {
+          hriPill.style.display = "inline-block";
+          hriPill.classList.add("low");
+          hriPill.textContent = t("hriLowLabel");
+          showCorr("hri-correction", t("corrHriLow"));
+        } else if (hri > state.targets.hriHigh) {
+          hriPill.style.display = "inline-block";
+          hriPill.classList.add("high");
+          hriPill.textContent = t("hriHighLabel");
+          showCorr("hri-correction", t("corrHriHigh"));
+        } else {
+          hriPill.style.display = "none";
+          hriPill.textContent = "";
+          showCorr("hri-correction", "");
+        }
+
+        // Conc correction
+        if (concOut) {
+          showCorr("conc-correction",
+            t("corrConcLow", { t: state.targets.targetHep }));
+        } else { showCorr("conc-correction", ""); }
+
+        // Predicted ACT (heparin half-life decay)
+        const predict = (mins) => {
+          const factor = Math.pow(0.5, mins / 90);
+          return Math.round(state.baseline + (actVal - state.baseline) * factor);
+        };
+        $("pred-15").textContent = predict(15);
+        $("pred-30").textContent = predict(30);
+        $("pred-60").textContent = predict(60);
 
         // Recommendation
         $("r-init").textContent = load.toLocaleString();
@@ -1829,25 +3304,53 @@
         $("contextInfo").textContent = `T+${state.tNow}m · BSA ${surface.toFixed(2)} m² · BV ${(bv / 1000).toFixed(2)} L`;
         $("chartTarget").textContent = state.targets.targetAct;
 
-        // Alerts
+        // Reversal protocol card (post-pump)
+        const revCard = $("reversal-card");
+        if (revCard) {
+          if (phaseId === "post") {
+            const activeIu = activeHeparinAt(state.tNow);
+            const protMg = activeIu / 100; // 1 mg per 100 IU (sodium heparin)
+            // natural time to baseline: solve baseline = baseline + (act - baseline) * 0.5^(t/90)
+            // → if currentACT > baseline + 5: t ≈ 90 * log2((act - baseline) / 5)
+            let ttb = 0;
+            const overshoot = actVal - state.baseline;
+            if (overshoot > 5) {
+              ttb = Math.round(90 * Math.log2(overshoot / 5));
+            }
+            $("rev-active-iu").textContent = Math.round(activeIu).toLocaleString();
+            $("rev-prot-mg").textContent = protMg.toFixed(1);
+            $("rev-ttb").textContent = ttb > 0 ? ttb : "—";
+            $("rev-note").textContent = activeIu > 100
+              ? t("reversalNoteGive", {
+                  iu: Math.round(activeIu).toLocaleString(),
+                  mg: protMg.toFixed(1),
+                })
+              : t("reversalNoteClear");
+            revCard.classList.add("active");
+          } else {
+            revCard.classList.remove("active");
+          }
+        }
+
+        // Alerts (phase-aware ranges)
         const alerts = [];
-        if (actVal < state.targets.actLow) {
+        if (actVal < effLow) {
           alerts.push({
             sev: "danger",
             l: t("aActLowL"),
-            d: t("aActLowD", { a: actVal, b: state.targets.actLow }),
+            d: t("aActLowD", { a: actVal, b: effLow }),
           });
-        } else if (actVal < state.targets.targetAct) {
+        } else if (actVal < effTgt) {
           alerts.push({
             sev: "warn",
             l: t("aActSubL"),
-            d: t("aActSubD", { a: actVal, b: state.targets.targetAct }),
+            d: t("aActSubD", { a: actVal, b: effTgt }),
           });
-        } else if (actVal > state.targets.actHigh) {
+        } else if (actVal > effHigh) {
           alerts.push({
             sev: "warn",
             l: t("aActHighL"),
-            d: t("aActHighD", { a: actVal, b: state.targets.actHigh }),
+            d: t("aActHighD", { a: actVal, b: effHigh }),
           });
         } else {
           alerts.push({
@@ -2000,6 +3503,665 @@
         </svg>`;
       }
 
+      // ---------- TC Mernis ----------
+      function validateTc(s) {
+        if (!/^\d{11}$/.test(s)) return false;
+        const d = s.split("").map(Number);
+        if (d[0] === 0) return false;
+        const sumOdd = d[0] + d[2] + d[4] + d[6] + d[8];
+        const sumEven = d[1] + d[3] + d[5] + d[7];
+        const ten = (sumOdd * 7 - sumEven) % 10;
+        if (((ten + 10) % 10) !== d[9]) return false;
+        const sumAll = d.slice(0, 10).reduce((a, b) => a + b, 0);
+        return sumAll % 10 === d[10];
+      }
+      function updateTcHint() {
+        const v = state.patient.tc || "";
+        const hint = $("tc-hint");
+        const inp = $("f-tc");
+        inp.classList.remove("input-error");
+        hint.classList.remove("error", "ok");
+        if (!v) {
+          hint.textContent = t("tcHintEmpty");
+        } else if (v.length < 11) {
+          hint.textContent = t("tcHintShort", { n: v.length });
+          hint.classList.add("error");
+          inp.classList.add("input-error");
+        } else if (!validateTc(v)) {
+          hint.textContent = t("tcHintInvalid");
+          hint.classList.add("error");
+          inp.classList.add("input-error");
+        } else {
+          hint.textContent = t("tcHintOk");
+          hint.classList.add("ok");
+        }
+      }
+
+      // ---------- Modals ----------
+      const openModal = (id) => $(id).classList.add("open");
+      const closeModal = (id) => $(id).classList.remove("open");
+      document.querySelectorAll("[data-modal]").forEach((m) => {
+        m.addEventListener("click", (e) => {
+          if (e.target === m) m.classList.remove("open");
+        });
+        m.querySelectorAll("[data-close]").forEach((b) =>
+          b.addEventListener("click", () => m.classList.remove("open")),
+        );
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape")
+          document.querySelectorAll(".modal-backdrop.open")
+            .forEach((m) => m.classList.remove("open"));
+      });
+      $("btn-calc").addEventListener("click", () => openModal("modal-calc"));
+      $("btn-conv").addEventListener("click", () => openModal("modal-conv"));
+      $("btn-report").addEventListener("click", () => {
+        buildReport();
+        openModal("modal-report");
+      });
+
+      // ---------- Medical Calculator ----------
+      (function medCalc() {
+        // Tabs
+        document.querySelectorAll("#modal-calc [data-mtab]").forEach((b) =>
+          b.addEventListener("click", () => {
+            document.querySelectorAll("#modal-calc [data-mtab]").forEach((x) =>
+              x.classList.toggle("active", x === b));
+            document.querySelectorAll("#modal-calc [data-mpane]").forEach((p) =>
+              p.style.display = p.dataset.mpane === b.dataset.mtab ? "" : "none");
+          }),
+        );
+
+        // Scientific expression keypad
+        const disp = $("calcDisplay");
+        const setDisp = (v) => { disp.value = v; };
+        const evalExpr = (raw) => {
+          // Replace symbols and constants
+          let s = String(raw)
+            .replace(/π/g, "Math.PI")
+            .replace(/(?<![a-zA-Z])e(?![a-zA-Z(])/g, "Math.E")
+            .replace(/\^/g, "**")
+            .replace(/\bsin\(/g, "Math.sin(")
+            .replace(/\bcos\(/g, "Math.cos(")
+            .replace(/\btan\(/g, "Math.tan(")
+            .replace(/\bsqrt\(/g, "Math.sqrt(")
+            .replace(/\babs\(/g, "Math.abs(")
+            .replace(/\bexp\(/g, "Math.exp(")
+            .replace(/\bln\(/g, "Math.log(")
+            .replace(/\blog\(/g, "Math.log10(");
+          // Whitelist final characters
+          if (/[^0-9+\-*/().,\sMathPIE_a-z]/.test(s.replace(/\*\*/g, ""))) {
+            return "Hata";
+          }
+          try {
+            const r = Function('"use strict"; return (' + s + ")")();
+            return Number.isFinite(r) ? String(+r.toPrecision(10)) : "—";
+          } catch { return "Hata"; }
+        };
+        document.querySelectorAll("#modal-calc [data-calc]").forEach((b) =>
+          b.addEventListener("click", () => {
+            const k = b.dataset.calc;
+            const cur = disp.value;
+            if (k === "C") return setDisp("0");
+            if (k === "=") return setDisp(evalExpr(cur));
+            if (cur === "0" && /[0-9.]/.test(k)) return setDisp(k);
+            setDisp(cur + k);
+          }),
+        );
+        // Allow free typing in display
+        disp.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") { e.preventDefault(); setDisp(evalExpr(disp.value)); }
+        });
+
+        // Medical presets
+        const PRESETS = {
+          "bsa-mosteller": {
+            fields: [
+              { id: "h", label: "boy", unit: "cm", from: () => state.patient.heightCm, type: "number" },
+              { id: "w", label: "kilo", unit: "kg", from: () => state.patient.weightKg, type: "number" },
+            ],
+            calc: (v) => {
+              const r = Math.sqrt((v.h * v.w) / 3600);
+              return { val: r.toFixed(2), unit: "m²", explain: "ASC = √(boy·kilo / 3600) — Mosteller 1987" };
+            },
+          },
+          "bsa-dubois": {
+            fields: [
+              { id: "h", label: "boy", unit: "cm", from: () => state.patient.heightCm, type: "number" },
+              { id: "w", label: "kilo", unit: "kg", from: () => state.patient.weightKg, type: "number" },
+            ],
+            calc: (v) => {
+              const r = 0.007184 * Math.pow(v.h, 0.725) * Math.pow(v.w, 0.425);
+              return { val: r.toFixed(2), unit: "m²", explain: "Du Bois & Du Bois 1916" };
+            },
+          },
+          bmi: {
+            fields: [
+              { id: "h", label: "boy", unit: "cm", from: () => state.patient.heightCm, type: "number" },
+              { id: "w", label: "kilo", unit: "kg", from: () => state.patient.weightKg, type: "number" },
+            ],
+            calc: (v) => {
+              const m = v.h / 100;
+              const r = v.w / (m * m);
+              const cls = r < 18.5 ? "düşük kilo" : r < 25 ? "normal" : r < 30 ? "fazla kilo" : "obez";
+              return { val: r.toFixed(1), unit: "kg/m²", explain: "Sınıflandırma: " + cls };
+            },
+          },
+          ibw: {
+            fields: [
+              { id: "h", label: "boy", unit: "cm", from: () => state.patient.heightCm, type: "number" },
+              { id: "sex", label: "cinsiyet", type: "select", opts: [["male", "Erkek"], ["female", "Kadın"]], from: () => state.patient.sex },
+            ],
+            calc: (v) => {
+              const inches = v.h / 2.54;
+              const base = v.sex === "female" ? 45.5 : 50;
+              const r = base + 2.3 * Math.max(0, inches - 60);
+              return { val: r.toFixed(1), unit: "kg", explain: "Devine 1974 — boy 60 inç (152.4 cm) üzeri için her inç 2.3 kg" };
+            },
+          },
+          lbw: {
+            fields: [
+              { id: "h", label: "boy", unit: "cm", from: () => state.patient.heightCm, type: "number" },
+              { id: "w", label: "kilo", unit: "kg", from: () => state.patient.weightKg, type: "number" },
+              { id: "sex", label: "cinsiyet", type: "select", opts: [["male", "Erkek"], ["female", "Kadın"]], from: () => state.patient.sex },
+            ],
+            calc: (v) => {
+              const m = v.h / 100;
+              const bmi = v.w / (m * m);
+              const k = v.sex === "female" ? 8780 : 6680;
+              const r = (9270 * v.w) / (k + 244 * bmi);
+              return { val: r.toFixed(1), unit: "kg", explain: "Janmahasatian 2005 (yağsız vücut)" };
+            },
+          },
+          "bv-nadler": {
+            fields: [
+              { id: "h", label: "boy", unit: "cm", from: () => state.patient.heightCm, type: "number" },
+              { id: "w", label: "kilo", unit: "kg", from: () => state.patient.weightKg, type: "number" },
+              { id: "sex", label: "cinsiyet", type: "select", opts: [["male", "Erkek"], ["female", "Kadın"]], from: () => state.patient.sex },
+            ],
+            calc: (v) => {
+              const hM = v.h / 100;
+              const r = v.sex === "female"
+                ? 0.3561 * hM ** 3 + 0.03308 * v.w + 0.1833
+                : 0.3669 * hM ** 3 + 0.03219 * v.w + 0.6041;
+              return { val: r.toFixed(2), unit: "L", explain: "Nadler 1962" };
+            },
+          },
+          "egfr-cg": {
+            fields: [
+              { id: "age", label: "yaş", unit: "yıl", from: () => state.patient.age, type: "number" },
+              { id: "w", label: "kilo", unit: "kg", from: () => state.patient.weightKg, type: "number" },
+              { id: "scr", label: "Serum Kreatinin", unit: "mg/dL", from: () => 1.0, type: "number", step: "0.01" },
+              { id: "sex", label: "cinsiyet", type: "select", opts: [["male", "Erkek"], ["female", "Kadın"]], from: () => state.patient.sex },
+            ],
+            calc: (v) => {
+              if (v.scr <= 0) return { val: "—", unit: "", explain: "SCr 0'dan büyük olmalı" };
+              let r = ((140 - v.age) * v.w) / (72 * v.scr);
+              if (v.sex === "female") r *= 0.85;
+              return { val: r.toFixed(1), unit: "mL/dk", explain: "Cockcroft-Gault 1976; kadın için ×0.85" };
+            },
+          },
+          "hep-load": {
+            fields: [
+              { id: "w", label: "kilo", unit: "kg", from: () => state.patient.weightKg, type: "number" },
+              { id: "iukg", label: "IU/kg", from: () => 350, type: "number" },
+            ],
+            calc: (v) => ({
+              val: Math.round(v.w * v.iukg).toLocaleString(),
+              unit: "IU",
+              explain: "Tipik KPB heparin yüklemesi 300–400 IU/kg",
+            }),
+          },
+          "hep-resist": {
+            fields: [
+              { id: "target", label: "Hedef ACT", unit: "s", from: () => state.targets.targetAct, type: "number" },
+              { id: "act", label: "Mevcut ACT", unit: "s", from: () => state.measurements.at(-1)?.act ?? state.baseline, type: "number" },
+              { id: "hri", label: "HRI", from: () => 1.0, type: "number", step: "0.01" },
+              { id: "w", label: "kilo", unit: "kg", from: () => state.patient.weightKg, type: "number" },
+            ],
+            calc: (v) => {
+              const def = v.target - v.act;
+              if (def <= 0) return { val: "0", unit: "IU", explain: "ACT zaten hedefte." };
+              const r = (def / Math.max(0.1, v.hri)) * v.w;
+              return { val: Math.round(r / 100) * 100, unit: "IU", explain: "Ek doz = ((Hedef−ACT)/HRI)·kg" };
+            },
+          },
+          protamine: {
+            fields: [
+              { id: "iu", label: "Aktif Heparin", unit: "IU", from: () => Math.round(activeHeparinAt(state.tNow)), type: "number" },
+              { id: "ratio", label: "mg / 100 IU", from: () => 1.0, type: "number", step: "0.1" },
+            ],
+            calc: (v) => ({
+              val: ((v.iu / 100) * v.ratio).toFixed(1),
+              unit: "mg",
+              explain: "Geri çevirme: 1 mg protamin / 100 IU aktif heparin (varsayılan oran 1:1)",
+            }),
+          },
+          "prot-ratio": {
+            fields: [
+              { id: "iu", label: "Yükleme Heparin", unit: "IU", from: () => state.measurements[0]?.cum || 25000, type: "number" },
+              { id: "ratio", label: "mg / 100 IU", from: () => 1.0, type: "number", step: "0.1" },
+            ],
+            calc: (v) => ({
+              val: ((v.iu / 100) * v.ratio).toFixed(1),
+              unit: "mg",
+              explain: "Başlangıç heparine göre tam protamin geri çevirmesi",
+            }),
+          },
+          drip: {
+            fields: [
+              { id: "dose", label: "Doz", unit: "mcg/kg/dk", from: () => 5, type: "number", step: "0.1" },
+              { id: "w", label: "kilo", unit: "kg", from: () => state.patient.weightKg, type: "number" },
+              { id: "conc", label: "Konsantrasyon", unit: "mg/mL", from: () => 1, type: "number", step: "0.01" },
+            ],
+            calc: (v) => {
+              if (v.conc <= 0) return { val: "—", unit: "", explain: "Konsantrasyon 0'dan büyük olmalı" };
+              const mlhr = (v.dose * v.w * 60) / (v.conc * 1000);
+              return { val: mlhr.toFixed(2), unit: "mL/sa", explain: "İnfüzyon hızı = (mcg/kg/dk · kg · 60) / (mg/mL · 1000)" };
+            },
+          },
+          maint: {
+            fields: [
+              { id: "w", label: "kilo", unit: "kg", from: () => state.patient.weightKg, type: "number" },
+            ],
+            calc: (v) => {
+              const w = v.w;
+              let r;
+              if (w <= 10) r = 4 * w;
+              else if (w <= 20) r = 40 + 2 * (w - 10);
+              else r = 60 + (w - 20);
+              return { val: r.toFixed(0), unit: "mL/sa", explain: "Holliday-Segar 4-2-1 kuralı" };
+            },
+          },
+          map: {
+            fields: [
+              { id: "sbp", label: "Sistolik (SBP)", unit: "mmHg", from: () => 120, type: "number" },
+              { id: "dbp", label: "Diyastolik (DBP)", unit: "mmHg", from: () => 80, type: "number" },
+            ],
+            calc: (v) => {
+              const r = (v.sbp + 2 * v.dbp) / 3;
+              return { val: r.toFixed(0), unit: "mmHg", explain: "OAB = (SBP + 2·DBP) / 3" };
+            },
+          },
+          qtc: {
+            fields: [
+              { id: "qt", label: "QT", unit: "ms", from: () => 400, type: "number" },
+              { id: "rr", label: "RR aralığı", unit: "ms", from: () => 1000, type: "number" },
+            ],
+            calc: (v) => {
+              if (v.rr <= 0) return { val: "—", unit: "", explain: "RR > 0 olmalı" };
+              const r = v.qt / Math.sqrt(v.rr / 1000);
+              return { val: r.toFixed(0), unit: "ms", explain: "QTc (Bazett) = QT / √(RR_s); >450 ms ♂, >460 ms ♀ uzun" };
+            },
+          },
+          anion: {
+            fields: [
+              { id: "na", label: "Na⁺", unit: "mEq/L", from: () => 140, type: "number" },
+              { id: "cl", label: "Cl⁻", unit: "mEq/L", from: () => 100, type: "number" },
+              { id: "hco3", label: "HCO₃⁻", unit: "mEq/L", from: () => 24, type: "number" },
+            ],
+            calc: (v) => {
+              const r = v.na - (v.cl + v.hco3);
+              const cls = r > 12 ? "yüksek (>12)" : r < 8 ? "düşük (<8)" : "normal (8–12)";
+              return { val: r.toFixed(0), unit: "mEq/L", explain: "Anyon Açığı = Na − (Cl + HCO₃) — " + cls };
+            },
+          },
+        };
+
+        let activePreset = null;
+        const formEl = $("med-form");
+        const resVal = $("mr-val");
+        const resUnit = $("mr-unit");
+        const resExp = $("mr-explain");
+
+        const buildForm = (key) => {
+          const cfg = PRESETS[key];
+          if (!cfg) return;
+          activePreset = key;
+          formEl.classList.add("active");
+          const rows = cfg.fields.map((f) => {
+            const v = f.from ? f.from() : "";
+            if (f.type === "select") {
+              const opts = f.opts.map(([val, lbl]) =>
+                `<option value="${val}"${val === v ? " selected" : ""}>${lbl}</option>`).join("");
+              return `<label><span>${f.label}</span><select data-mf="${f.id}">${opts}</select></label>`;
+            }
+            const step = f.step || "any";
+            const unit = f.unit ? ` (${f.unit})` : "";
+            return `<label><span>${f.label}${unit}</span><input data-mf="${f.id}" type="number" step="${step}" value="${v}" /></label>`;
+          }).join("");
+          formEl.innerHTML =
+            `<div class="row">${rows}</div>` +
+            `<div class="actions">` +
+            `<button id="mf-calc">${t("mcCalculate") || "Hesapla"}</button>` +
+            `<button class="secondary" id="mf-send">${t("mcToExpr") || "İfadeye Gönder"}</button>` +
+            `</div>`;
+          $("mf-calc").addEventListener("click", () => runPreset());
+          $("mf-send").addEventListener("click", () => {
+            const v = resVal.textContent;
+            if (v && v !== "—") {
+              setDisp(v);
+              document.querySelector('#modal-calc [data-mtab="expr"]').click();
+            }
+          });
+          formEl.querySelectorAll("[data-mf]").forEach((el) =>
+            el.addEventListener("input", runPreset));
+          runPreset();
+        };
+
+        const runPreset = () => {
+          const cfg = PRESETS[activePreset];
+          if (!cfg) return;
+          const vals = {};
+          cfg.fields.forEach((f) => {
+            const el = formEl.querySelector(`[data-mf="${f.id}"]`);
+            if (!el) return;
+            vals[f.id] = f.type === "select" ? el.value : Number(el.value);
+          });
+          try {
+            const r = cfg.calc(vals);
+            resVal.textContent = r.val;
+            resUnit.textContent = r.unit || "";
+            resExp.textContent = r.explain || "";
+          } catch (e) {
+            resVal.textContent = "—";
+            resExp.textContent = "Hesaplama hatası: " + e.message;
+          }
+        };
+
+        document.querySelectorAll("#modal-calc [data-mc]").forEach((b) =>
+          b.addEventListener("click", () => {
+            document.querySelectorAll("#modal-calc [data-mc]").forEach((x) =>
+              x.classList.toggle("active", x === b));
+            buildForm(b.dataset.mc);
+          }),
+        );
+      })();
+
+      // ---------- Converter ----------
+      (function conv() {
+        const setVal = (id, v) => {
+          const el = $(id);
+          if (document.activeElement !== el)
+            el.value = Number.isFinite(v) ? +v.toFixed(6) : "";
+        };
+        const wire = (group, fn) => {
+          document
+            .querySelectorAll(`#modal-conv [data-conv="${group}"]`)
+            .forEach((el) =>
+              el.addEventListener("input", () => fn(el.dataset.unit, parseFloat(el.value))),
+            );
+        };
+        // Volume
+        wire("vol", (u, v) => {
+          if (!Number.isFinite(v)) return;
+          let mL;
+          if (u === "ml") mL = v;
+          else if (u === "l") mL = v * 1000;
+          else mL = v * 1_000_000;
+          setVal("cv-ml", mL);
+          setVal("cv-l", mL / 1000);
+          setVal("cv-l2", mL / 1000);
+          setVal("cv-kl", mL / 1_000_000);
+        });
+        // Heparin mass <-> activity (1 mg = 100 IU)
+        wire("hep", (u, v) => {
+          if (!Number.isFinite(v)) return;
+          const iu = u === "mg" ? v * 100 : v;
+          setVal("cv-mg", iu / 100);
+          setVal("cv-iu", iu);
+        });
+        // Concentration (1 mg/mL = 100 IU/mL)
+        wire("conc", (u, v) => {
+          if (!Number.isFinite(v)) return;
+          const iuml = u === "iuml" ? v : v * 100;
+          setVal("cv-iuml", iuml);
+          setVal("cv-mgml", iuml / 100);
+        });
+        // Protamine
+        wire("prot", (u, v) => {
+          if (!Number.isFinite(v)) return;
+          if (u === "iu") setVal("cv-prot-mg", v / 100);
+          else setVal("cv-prot-iu", v * 100);
+        });
+      })();
+
+      // ---------- Report ----------
+      function buildReport() {
+        const p = state.patient;
+        const surface = bsa(p.heightCm, p.weightKg);
+        const bv = bloodVolMl(p);
+        const head = `
+          <table class="report-table">
+            <tr><th>${t("rPatientId")}</th><td>${p.id || "—"}</td>
+                <th>${t("rTc")}</th><td>${p.tc || "—"}</td></tr>
+            <tr><th>${t("rBlood")}</th><td>${p.blood || "—"}</td>
+                <th>${t("rAge")}</th><td>${p.age} ${t("unitYrs")}</td></tr>
+            <tr><th>${t("rSex")}</th><td>${p.sex === "female" ? t("female") : t("male")}</td>
+                <th>${t("rHW")}</th><td>${p.heightCm} cm / ${p.weightKg} kg</td></tr>
+            <tr><th>${t("rBsa")}</th><td>${surface.toFixed(2)} m²</td>
+                <th>${t("rTbv")}</th><td>${(bv / 1000).toFixed(2)} L</td></tr>
+            <tr><th>${t("rBaseline")}</th><td>${state.baseline} s</td>
+                <th>${t("rTargetAct")}</th><td>≥ ${state.targets.targetAct} s</td></tr>
+          </table>`;
+        const rows = state.measurements
+          .map((m, i) => {
+            const cumIu = (m.cum || 0).toLocaleString();
+            const conc = (m.cum / Math.max(1, bv)).toFixed(2);
+            return `<tr>
+              <td>T+${m.t}m</td>
+              <td>${m.act} s</td>
+              <td>${cumIu} IU</td>
+              <td>${conc} IU/mL</td>
+              <td>${i === 0 ? t("rBaselineMark") : t("rDose")}</td>
+            </tr>`;
+          })
+          .join("");
+        const log = `
+          <h4 style="margin:0.85rem 0 0.4rem;font-family:'Cormorant Garamond',serif">${t("rLog")}</h4>
+          <table class="report-table">
+            <thead><tr>
+              <th>${t("rTime")}</th><th>ACT</th>
+              <th>${t("rCumHep")}</th><th>${t("rConc")}</th><th>${t("rNote")}</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+        const stamp = new Date().toLocaleString();
+        const foot = `<p style="font-family:'Space Mono',monospace;font-size:0.65rem;color:hsl(var(--muted-fg));margin-top:0.85rem">${t("rGenerated")}: ${stamp}</p>`;
+        $("reportBody").innerHTML = head + log + foot;
+      }
+      $("btn-print").addEventListener("click", () => window.print());
+      $("btn-csv").addEventListener("click", () => {
+        const p = state.patient;
+        const lines = [
+          ["patient_id", "tc", "blood", "age", "sex", "height_cm", "weight_kg", "baseline_act"],
+          [p.id, p.tc, p.blood, p.age, p.sex, p.heightCm, p.weightKg, state.baseline],
+          [],
+          ["t_min", "act_s", "cumulative_heparin_iu"],
+          ...state.measurements.map((m) => [m.t, m.act, m.cum]),
+        ];
+        const csv = lines.map((r) =>
+          r.map((c) => (c == null ? "" : `"${String(c).replace(/"/g, '""')}"`)).join(","),
+        ).join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `protakip-${p.id || "vaka"}-${Date.now()}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      // ---------- Demo ----------
+      let demoTimer = null;
+      const DEMO_SCRIPT = [
+        { t: 0,  act: 110, dose: 0,    note: "baseline" },
+        { t: 3,  act: 540, dose: 28000, note: "loading" },
+        { t: 18, act: 510, dose: 0,    note: "check" },
+        { t: 33, act: 470, dose: 5000, note: "top-up" },
+        { t: 48, act: 495, dose: 0,    note: "check" },
+        { t: 63, act: 460, dose: 4000, note: "top-up" },
+        { t: 78, act: 520, dose: 0,    note: "stable" },
+        { t: 93, act: 540, dose: 0,    note: "weaning" },
+      ];
+      function startDemo() {
+        stopDemo();
+        state.patient = {
+          id: "DEMO-001", tc: "", blood: "A+",
+          age: 58, sex: "male", heightCm: 175, weightKg: 78,
+        };
+        state.baseline = 110;
+        state.tNow = 0;
+        state.measurements = [{ t: 0, act: 110, cum: 0 }];
+        syncForm();
+        $("demoBanner").classList.add("active");
+        let i = 1;
+        demoTimer = setInterval(() => {
+          if (i >= DEMO_SCRIPT.length) { stopDemo(); return; }
+          const s = DEMO_SCRIPT[i];
+          state.tNow = s.t;
+          const last = state.measurements[state.measurements.length - 1];
+          state.measurements.push({
+            t: s.t, act: s.act, cum: (last?.cum ?? 0) + s.dose,
+          });
+          $("f-tnow").value = state.tNow;
+          render();
+          i += 1;
+        }, 1500);
+        render();
+      }
+      function stopDemo() {
+        if (demoTimer) { clearInterval(demoTimer); demoTimer = null; }
+        $("demoBanner").classList.remove("active");
+      }
+      $("btn-demo").addEventListener("click", startDemo);
+      $("btn-demo-stop").addEventListener("click", stopDemo);
+
+      // ---------- Phase timers (case + pump) ----------
+      function patientReady() {
+        const p = state.patient;
+        return (
+          Number(p.age) > 0 &&
+          (p.sex === "male" || p.sex === "female") &&
+          Number(p.heightCm) > 50 &&
+          Number(p.weightKg) > 2 &&
+          Number(state.baseline) > 0
+        );
+        // NOTE: TC kimlik validity is intentionally NOT a gate — invalid TC is
+        // only flagged visually (red border + hint), case can still start.
+      }
+      function showGate(on) {
+        const g = $("gate-note");
+        if (g) g.classList.toggle("active", !!on);
+        // also flash the missing fields
+        const fields = ["f-age", "f-height", "f-weight", "f-baseline"];
+        fields.forEach((id) => {
+          const el = $(id);
+          if (!el) return;
+          const v = Number(el.value);
+          el.classList.toggle("invalid", on && !(v > 0));
+        });
+        const sx = $("f-sex");
+        if (sx) sx.classList.toggle("invalid", on && !(sx.value === "male" || sx.value === "female"));
+      }
+      function startCase() {
+        if (!patientReady()) {
+          showGate(true);
+          $("gate-note")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          return;
+        }
+        showGate(false);
+        state.phase.caseStartedAt = Date.now();
+        state.phase.pumpStartedAt = null;
+        state.phase.pumpStoppedAt = null;
+        tickPhase();
+        render();
+      }
+      function resetCase() {
+        state.phase.caseStartedAt = null;
+        state.phase.pumpStartedAt = null;
+        state.phase.pumpStoppedAt = null;
+        showGate(false);
+        tickPhase();
+        render();
+      }
+      function startPump() {
+        if (!patientReady()) { showGate(true); return; }
+        if (!state.phase.caseStartedAt) startCase();
+        state.phase.pumpStartedAt = Date.now();
+        state.phase.pumpStoppedAt = null;
+        tickPhase();
+        render();
+      }
+      function stopPump() {
+        if (!state.phase.pumpStartedAt) return;
+        state.phase.pumpStoppedAt = Date.now();
+        tickPhase();
+        render();
+      }
+      $("btn-case-start").addEventListener("click", startCase);
+      $("btn-case-reset").addEventListener("click", resetCase);
+      $("btn-pump-start").addEventListener("click", startPump);
+      $("btn-pump-stop").addEventListener("click", stopPump);
+
+      function tickPhase() {
+        const ph = state.phase;
+        const now = Date.now();
+        const phase = getPhase();
+
+        const caseEl = $("case-time");
+        const pumpEl = $("pump-time");
+        if (caseEl) {
+          caseEl.textContent = ph.caseStartedAt
+            ? fmtClock(now - ph.caseStartedAt)
+            : "00:00";
+        }
+        if (pumpEl) {
+          if (ph.pumpStartedAt && !ph.pumpStoppedAt) {
+            pumpEl.textContent = fmtClock(now - ph.pumpStartedAt);
+          } else if (ph.pumpStartedAt && ph.pumpStoppedAt) {
+            pumpEl.textContent = fmtClock(ph.pumpStoppedAt - ph.pumpStartedAt);
+          } else {
+            pumpEl.textContent = "00:00";
+          }
+        }
+        // active styling
+        $("cell-case")?.classList.toggle("active", phase === "pre" || phase === "post");
+        $("cell-pump")?.classList.toggle("active", phase === "pump");
+
+        // pill
+        const pill = $("phase-pill");
+        if (pill) {
+          pill.classList.remove("pre", "pump", "post");
+          if (phase === "pre")  { pill.classList.add("pre");  pill.textContent = t("phasePre"); }
+          else if (phase === "pump") { pill.classList.add("pump"); pill.textContent = t("phasePump"); }
+          else if (phase === "post") { pill.classList.add("post"); pill.textContent = t("phasePost"); }
+          else pill.textContent = t("phaseIdle");
+        }
+
+        // button states
+        const btnCS = $("btn-case-start");
+        const btnPS = $("btn-pump-start");
+        const btnPX = $("btn-pump-stop");
+        if (btnCS) btnCS.textContent = ph.caseStartedAt ? t("btnCaseRunning") : t("btnStartCase");
+        if (btnCS) btnCS.disabled = !!ph.caseStartedAt;
+        if (btnPS) btnPS.disabled = !!ph.pumpStartedAt && !ph.pumpStoppedAt;
+        if (btnPX) btnPX.disabled = !ph.pumpStartedAt || !!ph.pumpStoppedAt;
+      }
+      setInterval(tickPhase, 1000);
+
+      // ---------- Font scale ----------
+      function setFont(size) {
+        document.documentElement.dataset.font = size;
+        document.querySelectorAll("[data-font]").forEach((b) =>
+          b.classList.toggle("active", b.dataset.font === size),
+        );
+        try { localStorage.setItem("protakip:font", size); } catch {}
+      }
+      document.querySelectorAll(".font-btn[data-font]").forEach((b) =>
+        b.addEventListener("click", () => setFont(b.dataset.font)),
+      );
+
       // ---------- init ----------
       try {
         const sl = localStorage.getItem("protakip:lang");
@@ -2009,16 +4171,23 @@
         const st = localStorage.getItem("protakip:theme");
         if (st) setTheme(st);
       } catch {}
+      try {
+        const sf = localStorage.getItem("protakip:font");
+        setFont(sf || "md");
+      } catch { setFont("md"); }
       document
         .querySelectorAll("[data-lang]")
         .forEach((x) => x.classList.toggle("active", x.dataset.lang === lang));
 
       syncForm();
       attachInputs();
+      updateTcHint();
       applyI18n();
+      tickPhase();
 
-      // Tick clock every minute
+      // Tick clock every minute (auto-advance only while case is running)
       setInterval(() => {
+        if (!state.phase.caseStartedAt) return;
         state.tNow += 1;
         $("f-tnow").value = state.tNow;
         render();
